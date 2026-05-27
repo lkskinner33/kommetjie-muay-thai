@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Log In – Kommetjie Muay Thai v5</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="icon" href="logo.png"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#c4f135"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="KMT"/>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.ico"/>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav__inner">
+    <a class="nav__logo" href="index.html">
+      <img src="logo.png" alt="KMT" height="36" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+      <span style="display:none">KMT</span>
+    </a>
+    <div class="nav-spacer"></div>
+    <div id="nav-user"></div>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="container--narrow">
+    <div style="max-width:420px;margin:0 auto">
+
+      <!-- Email step -->
+      <div id="step-email">
+        <div class="page-title text-center">
+          <h1>Welcome<br><span class="text-lime">back</span></h1>
+          <p>Enter your email to receive a login code.</p>
+        </div>
+        <div class="card">
+          <div id="err-email" class="form-error"></div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="email" placeholder="you@example.com"
+              autocomplete="email" autofocus/>
+          </div>
+          <button class="btn btn-primary btn-full" id="btn-send" onclick="sendOTP()">
+            Send Login Code
+          </button>
+          <p class="text-center mt-16" style="font-size:.85rem">
+            New member? <a href="register.html">Create account</a>
+          </p>
+        </div>
+      </div>
+
+      <!-- OTP step -->
+      <div id="step-otp" style="display:none">
+        <div class="page-title text-center">
+          <h1>Check your<br><span class="text-lime">email</span></h1>
+          <p>We sent a 6-digit code to<br><strong id="otp-email-label"></strong></p>
+        </div>
+        <div class="card">
+          <div id="err-otp" class="form-error"></div>
+          <div class="form-group">
+            <input type="text" id="otp_code" placeholder="000000" maxlength="6"
+              style="text-align:center;font-size:1.8rem;letter-spacing:8px;font-family:var(--font-head)"
+              autocomplete="one-time-code" autofocus/>
+          </div>
+          <button class="btn btn-primary btn-full" id="btn-verify" onclick="verifyOTP()">
+            Log In →
+          </button>
+          <div class="flex-between mt-16" style="font-size:.85rem">
+            <a href="#" onclick="backToEmail(event)">← Change email</a>
+            <a href="#" onclick="resendOTP(event)">Resend code</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  (async () => {
+    const session = await getSession();
+    if (session) { window.location.href = 'dashboard.html'; return; }
+    renderNav(null);
+  })();
+
+  let currentEmail = '';
+
+  async function sendOTP() {
+    const err = document.getElementById('err-email');
+    err.style.display = 'none';
+    const email = document.getElementById('email').value.trim();
+
+    if (!email || !email.includes('@')) {
+      err.textContent = 'Please enter a valid email address.';
+      err.style.display = 'block';
+      return;
+    }
+
+    const btn = document.getElementById('btn-send');
+    setBtn(btn, true);
+
+    // Use shouldCreateUser:true so Supabase never blocks on unknown emails.
+    // If someone without a profile verifies, we catch it after OTP step.
+    const { error } = await db.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true }
+    });
+
+    setBtn(btn, false);
+
+    if (error) {
+      err.textContent = error.message || 'Failed to send code. Please try again.';
+      err.style.display = 'block';
+      return;
+    }
+
+    currentEmail = email;
+    document.getElementById('otp-email-label').textContent = email;
+    document.getElementById('step-email').style.display = 'none';
+    document.getElementById('step-otp').style.display = 'block';
+    setTimeout(() => document.getElementById('otp_code').focus(), 100);
+  }
+
+  async function verifyOTP() {
+    const err = document.getElementById('err-otp');
+    err.style.display = 'none';
+    const code = document.getElementById('otp_code').value.trim();
+
+    if (code.length !== 6) {
+      err.textContent = 'Please enter the 6-digit code from your email.';
+      err.style.display = 'block';
+      return;
+    }
+
+    const btn = document.getElementById('btn-verify');
+    setBtn(btn, true);
+
+    const { error } = await db.auth.verifyOtp({
+      email: currentEmail,
+      token: code,
+      type: 'email'
+    });
+
+    setBtn(btn, false);
+
+    if (error) {
+      err.textContent = 'Invalid or expired code. Please try again.';
+      err.style.display = 'block';
+      return;
+    }
+
+    // Check if this user has a profile — if not, send to register
+    const { data: { session } } = await db.auth.getSession();
+    if (session) {
+      const { data: profile } = await db.from('profiles')
+        .select('id').eq('id', session.user.id).single();
+      if (!profile) {
+        window.location.href = 'register.html';
+        return;
+      }
+    }
+
+    window.location.href = 'dashboard.html';
+  }
+
+  async function resendOTP(e) {
+    e.preventDefault();
+    await db.auth.signInWithOtp({ email: currentEmail, options: { shouldCreateUser: true } });
+    showToast('Code resent — check your inbox.', 'success');
+  }
+
+  function backToEmail(e) {
+    e.preventDefault();
+    document.getElementById('step-otp').style.display  = 'none';
+    document.getElementById('step-email').style.display = 'block';
+    document.getElementById('otp_code').value = '';
+  }
+
+  // Allow pressing Enter on inputs
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (document.getElementById('step-email').style.display !== 'none') sendOTP();
+    else verifyOTP();
+  });
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js")
+        .then(r => console.log("SW registered:", r.scope))
+        .catch(e => console.warn("SW failed:", e));
+    });
+  }
+</script>
+<div style="position:fixed;bottom:4px;right:8px;font-size:10px;color:#333;z-index:9999">v5</div>
+</body>
+</html>

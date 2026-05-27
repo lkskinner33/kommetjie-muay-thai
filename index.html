@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Kommetjie Muay Thai</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="icon" href="logo.png"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#c4f135"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="KMT"/>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.ico"/>
+  <style>
+    .hero {
+      padding: 80px 24px 60px;
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 48px; align-items: center;
+    }
+    @media(max-width:720px){ .hero { grid-template-columns:1fr; text-align:center; } }
+    .hero__logo { display:flex; justify-content:center; }
+    .hero__logo img { width: min(340px, 90vw); max-width: 100%; height: auto; display: block; border-radius: 50%; filter: drop-shadow(0 0 48px rgba(196,241,53,.35)); }
+    .hero__tag {
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 2.5px;
+      color: var(--lime); text-transform: uppercase; margin-bottom: 16px;
+    }
+    .hero h1 span { color: var(--lime); }
+    .hero p { font-size: 1.05rem; margin: 20px 0 32px; max-width: 440px; }
+    @media(max-width:720px){ .hero p { margin-inline: auto; } }
+    .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
+    @media(max-width:720px){ .hero-cta { justify-content:center; } }
+    .info-bar {
+      background: var(--card); border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border); padding: 20px 24px;
+    }
+    .info-bar__inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; flex-wrap: wrap; gap: 32px;
+    }
+    .info-item { display: flex; align-items: center; gap: 10px; }
+    .info-item .icon { font-size: 20px; }
+    .info-item strong { font-size: 0.85rem; font-weight: 600; }
+    .info-item span { font-size: 0.8rem; color: var(--mid); }
+    .section { padding: 64px 0; }
+    .section-label {
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 2.5px;
+      text-transform: uppercase; color: var(--lime); margin-bottom: 12px;
+    }
+    .schedule-wrap { margin-top: 32px; }
+    .day-group { margin-bottom: 28px; }
+    .day-group__label {
+      font-family: var(--font-head); font-size: 0.85rem; letter-spacing: 1.5px;
+      color: var(--mid); text-transform: uppercase; margin-bottom: 10px;
+      border-bottom: 1px solid var(--border); padding-bottom: 6px;
+    }
+    .day-group__classes { display: flex; flex-wrap: wrap; gap: 10px; }
+    .sched-pill {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 40px; padding: 10px 18px;
+    }
+    .sched-pill .time { font-family: var(--font-head); font-size: 1rem; color: var(--lime); }
+    .sched-pill .sep  { color: var(--border); }
+    .sched-pill .dur  { font-size: 0.8rem; color: var(--mid); }
+    .footer {
+      border-top: 1px solid var(--border); padding: 40px 24px;
+      text-align: center; color: var(--mid); font-size: 0.85rem;
+    }
+    .footer strong { color: #ccc; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav__inner">
+    <a class="nav__logo" href="index.html">
+      <img src="logo.png" alt="KMT" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+      <span style="display:none">KMT</span>
+    </a>
+    <div class="nav-spacer"></div>
+    <div id="nav-user"></div>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero__content">
+    <div class="hero__tag">Kommetjie · Est. 2024</div>
+    <h1>Fight Ready.<br><span>Mind Steady.</span></h1>
+    <p>Authentic Muay Thai training at the edge of the Cape Peninsula. All levels welcome.</p>
+    <div class="hero-cta" id="hero-cta">
+      <a href="register.html" class="btn btn-primary btn-lg">Join the Gym</a>
+      <a href="#schedule"     class="btn btn-outline btn-lg">View Schedule</a>
+    </div>
+  </div>
+  <div class="hero__logo">
+    <img src="logo.png" alt="Kommetjie Muay Thai"/>
+  </div>
+</section>
+
+<div class="info-bar">
+  <div class="info-bar__inner">
+    <div class="info-item">
+      <span class="icon">📍</span>
+      <div><strong>Generation Schools Imhoff</strong><br><span>62 Kommetjie Rd, Kommetjie, 7975</span></div>
+    </div>
+    <div class="info-item">
+      <span class="icon">🕕</span>
+      <div><strong>Morning Sessions</strong><br><span>Mon–Fri · 6:00 – 7:00 AM</span></div>
+    </div>
+    <div class="info-item">
+      <span class="icon">🌇</span>
+      <div><strong>Afternoon Sessions</strong><br><span>Mon & Wed · 5:30 – 6:30 PM</span></div>
+    </div>
+    <div class="info-item">
+      <span class="icon">💰</span>
+      <div><strong>Membership</strong><br><span>R250 per month</span></div>
+    </div>
+  </div>
+</div>
+
+<section class="section" id="schedule">
+  <div class="container">
+    <div class="section-label">Weekly Schedule</div>
+    <h2>When We Train</h2>
+    <div class="schedule-wrap" id="schedule-wrap">
+      <div class="loading-screen"><div class="spinner"></div></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <strong>Kommetjie Muay Thai</strong><br>
+  Generation Schools Imhoff · 62 Kommetjie Road, Kommetjie, 7975<br><br>
+  <small>Operated and run by Luke Skinner &nbsp;&middot;&nbsp; Fight Ready. Mind Steady.</small><br><br>
+  <small><a href="terms.html" style="color:var(--mid)">Terms &amp; Policies</a></small>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  (async () => {
+    // Nav
+    const session = await getSession();
+    let profile = null;
+    if (session) profile = await getProfile(session.user.id);
+    renderNav(profile);
+
+    // Update hero CTA based on login state
+    const heroCta = document.getElementById('hero-cta');
+    if (heroCta && profile) {
+      heroCta.innerHTML = `
+        <a href="dashboard.html" class="btn btn-primary btn-lg">My Classes</a>
+        <a href="#schedule"      class="btn btn-outline btn-lg">View Schedule</a>`;
+    }
+
+    // Schedule
+    const { data: classes } = await db.from('classes')
+      .select('*').eq('active', true).order('day_of_week').order('start_time');
+
+    const wrap = document.getElementById('schedule-wrap');
+    if (!classes || classes.length === 0) {
+      wrap.innerHTML = '<p class="text-mid">No classes scheduled yet.</p>';
+      return;
+    }
+
+    // Group by day
+    const byDay = {};
+    classes.forEach(c => {
+      if (!byDay[c.day_of_week]) byDay[c.day_of_week] = [];
+      byDay[c.day_of_week].push(c);
+    });
+
+    const order = [1,2,3,4,5,6,0];
+    let html = '';
+    order.forEach(dow => {
+      if (!byDay[dow]) return;
+      html += `<div class="day-group">
+        <div class="day-group__label">${DAYS[dow]}</div>
+        <div class="day-group__classes">`;
+      byDay[dow].forEach(c => {
+        html += `<div class="sched-pill">
+          <span class="time">${formatTime(c.start_time)}</span>
+          <span class="sep">–</span>
+          <span class="time">${formatTime(c.end_time)}</span>
+          <span class="dur">${c.name}</span>
+        </div>`;
+      });
+      html += `</div></div>`;
+    });
+
+    wrap.innerHTML = html;
+  })();
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js")
+        .then(r => console.log("SW registered:", r.scope))
+        .catch(e => console.warn("SW failed:", e));
+    });
+  }
+</script>
+</body>
+</html>

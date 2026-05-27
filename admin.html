@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Admin – Kommetjie Muay Thai</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="icon" href="logo.png"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#c4f135"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="KMT"/>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.ico"/>
+  <style>
+    .stat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; margin-bottom:36px; }
+    .stat-card  { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+    .stat-card__val  { font-family:var(--font-head); font-size:2rem; color:var(--lime); line-height:1; margin-bottom:4px; }
+    .stat-card__label{ font-size:.8rem; color:var(--mid); }
+    .modal-overlay {
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,.7);
+      z-index:500; align-items:center; justify-content:center; padding:24px;
+    }
+    .modal-overlay.open { display:flex; }
+    .modal {
+      background:var(--dark); border:1px solid var(--border); border-radius:var(--radius);
+      padding:28px; width:100%; max-width:480px; max-height:90vh; overflow-y:auto;
+    }
+    .modal h3 { margin-bottom:20px; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav__inner">
+    <a class="nav__logo" href="index.html">
+      <img src="logo.png" alt="KMT" height="36" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+      <span style="display:none">KMT</span>
+    </a>
+    <div class="nav-spacer"></div>
+    <div id="nav-user"></div>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="container">
+
+    <div id="loading-screen" class="loading-screen">
+      <div class="spinner"></div><span>Loading admin panel…</span>
+    </div>
+
+    <div id="main" style="display:none">
+
+      <div class="page-title">
+        <div style="font-size:.72rem;font-weight:700;letter-spacing:2px;color:var(--lime);text-transform:uppercase;margin-bottom:8px">Admin Panel</div>
+        <h1>Kommetjie Muay Thai</h1>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stat-grid" id="stats-grid"></div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('schedule')">Schedule</button>
+        <button class="tab-btn"        onclick="switchTab('bookings')">Today's Bookings</button>
+        <button class="tab-btn"        onclick="switchTab('members')">Members</button>
+        <button class="tab-btn"        onclick="switchTab('admins')">Admins</button>
+        <button class="tab-btn"        onclick="switchTab('monitoring')">Monitoring</button>
+      </div>
+
+      <!-- SCHEDULE TAB -->
+      <div class="tab-panel active" id="tab-schedule">
+        <div class="flex-between mb-24">
+          <h3>Weekly Classes</h3>
+          <button class="btn btn-primary btn-sm" onclick="openClassModal()">+ Add Class</button>
+        </div>
+        <div class="table-wrap">
+          <table id="schedule-table">
+            <thead>
+              <tr><th>Day</th><th>Time</th><th>Class</th><th>Capacity</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody id="schedule-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- BOOKINGS TAB -->
+      <div class="tab-panel" id="tab-bookings">
+        <h3 class="mb-24">Today's Bookings — <span id="today-label"></span></h3>
+        <div id="bookings-content"></div>
+      </div>
+
+      <!-- MEMBERS TAB -->
+      <div class="tab-panel" id="tab-members">
+        <div class="flex-between mb-24">
+          <h3>Members</h3>
+          <input type="text" id="member-search" placeholder="Search name or email…"
+            style="max-width:240px;padding:8px 14px;font-size:.85rem"
+            oninput="filterMembers()"/>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Name</th><th>Email</th><th>Phone</th><th>Joined</th><th>Status</th><th></th></tr>
+            </thead>
+            <tbody id="members-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ADMINS TAB -->
+      <div class="tab-panel" id="tab-admins">
+        <div class="flex-between mb-24">
+          <h3>Admin Users</h3>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Since</th><th></th></tr></thead>
+            <tbody id="admins-tbody"></tbody>
+          </table>
+        </div>
+        <div class="card mt-32" style="max-width:480px">
+          <h3 class="mb-16">Grant Admin Access</h3>
+          <p class="mb-16" style="font-size:.9rem">The member must already have a registered account.</p>
+          <div id="err-admin" class="form-error"></div>
+          <div class="form-group">
+            <label>Member Email</label>
+            <input type="email" id="admin-email" placeholder="member@email.com"/>
+          </div>
+          <button class="btn btn-primary" onclick="grantAdmin()">Grant Admin Access</button>
+        </div>
+      </div>
+
+      <!-- MONITORING TAB -->
+      <div class="tab-panel" id="tab-monitoring">
+
+        <div class="flex-between mb-24">
+          <h3>Registration Monitoring</h3>
+          <button class="btn btn-outline btn-sm" onclick="loadMonitoring()">↻ Refresh</button>
+        </div>
+
+        <!-- Stat cards -->
+        <div class="stat-grid" id="monitor-stats" style="margin-bottom:32px"></div>
+
+        <!-- Stuck users -->
+        <h4 class="mb-16" style="color:var(--mid);font-size:.8rem;letter-spacing:1px;text-transform:uppercase">
+          Auth Users Without a Profile
+          <span style="color:var(--mid);font-weight:400;margin-left:6px">(verified OTP but registration incomplete)</span>
+        </h4>
+        <div class="table-wrap mb-32">
+          <table>
+            <thead>
+              <tr><th>Email</th><th>Signed Up</th><th>Last Sign In</th><th>Status</th></tr>
+            </thead>
+            <tbody id="stuck-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Registration log -->
+        <h4 class="mb-16" style="color:var(--mid);font-size:.8rem;letter-spacing:1px;text-transform:uppercase">
+          OTP Event Log
+        </h4>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Email</th><th>Event</th><th>Time</th></tr>
+            </thead>
+            <tbody id="reglog-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Supabase log links -->
+        <div class="card mt-32" style="background:rgba(196,241,53,.04);border-color:rgba(196,241,53,.2)">
+          <h4 style="margin-bottom:12px">🔗 Supabase Auth Logs</h4>
+          <p style="font-size:.88rem;margin-bottom:12px">For deeper investigation, check the live auth logs directly in Supabase:</p>
+          <a href="https://supabase.com/dashboard/project/oojnckwtsooaotumdunp/logs/auth-logs"
+             target="_blank" class="btn btn-outline btn-sm">Open Auth Logs in Supabase →</a>
+        </div>
+
+      </div>
+
+    </div><!-- /main -->
+  </div>
+</div>
+
+<!-- Add/Edit Class Modal -->
+<div class="modal-overlay" id="class-modal">
+  <div class="modal">
+    <h3 id="modal-title">Add Class</h3>
+    <div id="err-modal" class="form-error"></div>
+    <div class="form-group">
+      <label>Class Name</label>
+      <input type="text" id="cls-name" value="Muay Thai"/>
+    </div>
+    <div class="form-group">
+      <label>Day of Week</label>
+      <select id="cls-dow">
+        <option value="1">Monday</option>
+        <option value="2">Tuesday</option>
+        <option value="3">Wednesday</option>
+        <option value="4">Thursday</option>
+        <option value="5">Friday</option>
+        <option value="6">Saturday</option>
+        <option value="0">Sunday</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Start Time</label>
+        <input type="time" id="cls-start"/>
+      </div>
+      <div class="form-group">
+        <label>End Time</label>
+        <input type="time" id="cls-end"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Capacity</label>
+      <input type="number" id="cls-cap" value="20" min="1" max="100"/>
+    </div>
+    <div class="flex gap-16 mt-8">
+      <button class="btn btn-outline" onclick="closeClassModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" id="btn-save-cls" onclick="saveClass()">Save Class</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  let adminProfile = null;
+  let allMembers   = [];
+  let editingClassId = null;
+
+  (async () => {
+    const result = await requireAdmin();
+    if (!result) return;
+    adminProfile = result.profile;
+    renderNav(adminProfile);
+
+    await Promise.all([loadStats(), loadSchedule(), loadBookings(), loadMembers()]);
+
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('main').style.display = 'block';
+    document.getElementById('today-label').textContent =
+      new Date().toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  })();
+
+  // ── Tabs ──────────────────────────────────────────────────
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach((b,i) => {
+      const names = ['schedule','bookings','members','admins','monitoring'];
+      b.classList.toggle('active', names[i] === name);
+    });
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`tab-${name}`).classList.add('active');
+    if (name === 'admins')     loadAdmins();
+    if (name === 'monitoring') loadMonitoring();
+  }
+
+  // ── Stats ─────────────────────────────────────────────────
+
+  async function loadStats() {
+    const today = new Date().toISOString().split('T')[0];
+    const [{ count: members }, { count: todayBookings }, { count: totalBookings }] = await Promise.all([
+      db.from('profiles').select('*', { count:'exact', head:true }).eq('role','member'),
+      db.from('bookings').select('*', { count:'exact', head:true }).eq('class_date', today).eq('status','confirmed'),
+      db.from('bookings').select('*', { count:'exact', head:true }).eq('status','confirmed')
+    ]);
+
+    document.getElementById('stats-grid').innerHTML = `
+      <div class="stat-card"><div class="stat-card__val">${members||0}</div><div class="stat-card__label">Members</div></div>
+      <div class="stat-card"><div class="stat-card__val">${todayBookings||0}</div><div class="stat-card__label">Booked Today</div></div>
+      <div class="stat-card"><div class="stat-card__val">${totalBookings||0}</div><div class="stat-card__label">Total Bookings</div></div>`;
+  }
+
+  // ── Schedule ──────────────────────────────────────────────
+
+  async function loadSchedule() {
+    const { data } = await db.from('classes').select('*').order('day_of_week').order('start_time');
+    const tbody = document.getElementById('schedule-tbody');
+    tbody.innerHTML = (data||[]).map(c => `
+      <tr>
+        <td>${DAYS[c.day_of_week]}</td>
+        <td>${formatTime(c.start_time)} – ${formatTime(c.end_time)}</td>
+        <td>${c.name}</td>
+        <td>${c.capacity}</td>
+        <td><span class="badge ${c.active ? 'badge-green' : 'badge-grey'}">${c.active ? 'Active' : 'Inactive'}</span></td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick='editClass(${JSON.stringify(c)})'>Edit</button>
+          <button class="btn btn-ghost btn-sm text-mid" onclick="toggleClass('${c.id}',${c.active})">${c.active ? 'Deactivate' : 'Activate'}</button>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="6" class="text-mid" style="text-align:center;padding:32px">No classes yet.</td></tr>';
+  }
+
+  // Class modal
+  function openClassModal(cls = null) {
+    editingClassId = cls ? cls.id : null;
+    document.getElementById('modal-title').textContent = cls ? 'Edit Class' : 'Add Class';
+    document.getElementById('cls-name').value  = cls?.name  || 'Muay Thai';
+    document.getElementById('cls-dow').value   = cls?.day_of_week ?? 1;
+    document.getElementById('cls-start').value = cls?.start_time?.slice(0,5) || '06:00';
+    document.getElementById('cls-end').value   = cls?.end_time?.slice(0,5)   || '07:00';
+    document.getElementById('cls-cap').value   = cls?.capacity || 20;
+    document.getElementById('err-modal').style.display = 'none';
+    document.getElementById('class-modal').classList.add('open');
+  }
+
+  function editClass(cls) { openClassModal(cls); }
+  function closeClassModal() {
+    document.getElementById('class-modal').classList.remove('open');
+    editingClassId = null;
+  }
+
+  async function saveClass() {
+    const err = document.getElementById('err-modal');
+    err.style.display = 'none';
+
+    const payload = {
+      name:        document.getElementById('cls-name').value.trim() || 'Muay Thai',
+      day_of_week: parseInt(document.getElementById('cls-dow').value),
+      start_time:  document.getElementById('cls-start').value,
+      end_time:    document.getElementById('cls-end').value,
+      capacity:    parseInt(document.getElementById('cls-cap').value) || 20,
+      active:      true
+    };
+
+    if (!payload.start_time || !payload.end_time) {
+      err.textContent = 'Please set start and end times.';
+      err.style.display = 'block';
+      return;
+    }
+
+    const btn = document.getElementById('btn-save-cls');
+    setBtn(btn, true);
+
+    let error;
+    if (editingClassId) {
+      ({ error } = await db.from('classes').update(payload).eq('id', editingClassId));
+    } else {
+      ({ error } = await db.from('classes').insert(payload));
+    }
+
+    setBtn(btn, false);
+
+    if (error) {
+      err.textContent = 'Save failed: ' + error.message;
+      err.style.display = 'block';
+      return;
+    }
+
+    closeClassModal();
+    showToast(editingClassId ? 'Class updated.' : 'Class added.', 'success');
+    loadSchedule();
+    loadStats();
+  }
+
+  async function toggleClass(id, active) {
+    await db.from('classes').update({ active: !active }).eq('id', id);
+    showToast(!active ? 'Class activated.' : 'Class deactivated.', 'success');
+    loadSchedule();
+  }
+
+  // ── Today's Bookings ──────────────────────────────────────
+
+  async function loadBookings() {
+    const today = new Date().toISOString().split('T')[0];
+
+    const { data } = await db.from('bookings')
+      .select('*, profiles(full_name, email), classes(name, start_time, end_time)')
+      .eq('class_date', today)
+      .eq('status', 'confirmed')
+      .order('class_id');
+
+    const el = document.getElementById('bookings-content');
+
+    if (!data || data.length === 0) {
+      el.innerHTML = '<div class="empty-state"><div class="emoji">🤷</div>No bookings for today yet.</div>';
+      return;
+    }
+
+    // Group by class
+    const grouped = {};
+    data.forEach(b => {
+      const key = `${b.class_id}`;
+      if (!grouped[key]) grouped[key] = { cls: b.classes, members: [] };
+      grouped[key].members.push(b.profiles);
+    });
+
+    el.innerHTML = Object.values(grouped).map(g => `
+      <div class="card mb-16">
+        <div class="flex-between mb-16">
+          <div>
+            <div style="font-family:var(--font-head);font-size:1.1rem">${g.cls.name}</div>
+            <div style="color:var(--lime);font-size:.9rem">${formatTime(g.cls.start_time)} – ${formatTime(g.cls.end_time)}</div>
+          </div>
+          <span class="badge badge-lime">${g.members.length} booked</span>
+        </div>
+        <div>
+          ${g.members.map(m => `
+            <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:.9rem">${m.full_name} <span style="color:var(--mid)">${m.email}</span></div>
+          `).join('')}
+        </div>
+      </div>`).join('');
+  }
+
+  // ── Members ───────────────────────────────────────────────
+
+  async function loadMembers() {
+    const { data } = await db.from('profiles').select('*').eq('role','member').order('full_name');
+    allMembers = data || [];
+    renderMembers(allMembers);
+  }
+
+  function renderMembers(members) {
+    document.getElementById('members-tbody').innerHTML = members.map(m => `
+      <tr>
+        <td>${m.full_name}</td>
+        <td style="color:var(--mid)">${m.email}</td>
+        <td style="color:var(--mid)">${m.phone || '–'}</td>
+        <td style="color:var(--mid)">${new Date(m.created_at).toLocaleDateString('en-ZA')}</td>
+        <td><span class="badge ${m.active ? 'badge-green' : 'badge-red'}">${m.active ? 'Active' : 'Inactive'}</span></td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="toggleMember('${m.id}',${m.active})">
+            ${m.active ? 'Deactivate' : 'Activate'}
+          </button>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--mid)">No members yet.</td></tr>';
+  }
+
+  function filterMembers() {
+    const q = document.getElementById('member-search').value.toLowerCase();
+    renderMembers(allMembers.filter(m =>
+      m.full_name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)));
+  }
+
+  async function toggleMember(id, active) {
+    await db.from('profiles').update({ active: !active }).eq('id', id);
+    showToast(!active ? 'Member activated.' : 'Member deactivated.', 'success');
+    loadMembers();
+  }
+
+  // ── Admins ────────────────────────────────────────────────
+
+  async function loadAdmins() {
+    const { data } = await db.from('profiles').select('*').eq('role','admin').order('full_name');
+    document.getElementById('admins-tbody').innerHTML = (data||[]).map(a => `
+      <tr>
+        <td>${a.full_name}</td>
+        <td style="color:var(--mid)">${a.email}</td>
+        <td style="color:var(--mid)">${new Date(a.created_at).toLocaleDateString('en-ZA')}</td>
+        <td>
+          ${a.id !== adminProfile.id ? `<button class="btn btn-ghost btn-sm text-mid" onclick="revokeAdmin('${a.id}')">Revoke</button>` : '<span style="color:var(--mid);font-size:.8rem">You</span>'}
+        </td>
+      </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--mid)">No admins found.</td></tr>';
+  }
+
+  async function grantAdmin() {
+    const err = document.getElementById('err-admin');
+    err.style.display = 'none';
+    const email = document.getElementById('admin-email').value.trim().toLowerCase();
+    if (!email) { err.textContent = 'Enter an email address.'; err.style.display = 'block'; return; }
+
+    const { data } = await db.from('profiles').select('id,full_name').eq('email', email).single();
+    if (!data) {
+      err.textContent = 'No registered member found with that email.';
+      err.style.display = 'block';
+      return;
+    }
+
+    await db.from('profiles').update({ role: 'admin' }).eq('id', data.id);
+    document.getElementById('admin-email').value = '';
+    showToast(`${data.full_name} is now an admin.`, 'success');
+    loadAdmins();
+  }
+
+  async function revokeAdmin(id) {
+    if (!confirm('Remove admin access from this user?')) return;
+    await db.from('profiles').update({ role: 'member' }).eq('id', id);
+    showToast('Admin access revoked.', 'success');
+    loadAdmins();
+  }
+
+  // ── Monitoring ────────────────────────────────────────────
+
+  async function loadMonitoring() {
+    await Promise.all([loadStuckUsers(), loadRegLog()]);
+  }
+
+  async function loadStuckUsers() {
+    const { data, error } = await db.rpc('get_stuck_registrations');
+    const tbody = document.getElementById('stuck-tbody');
+
+    if (error) {
+      tbody.innerHTML = `<tr><td colspan="4" style="color:var(--red)">Error: ${error.message}</td></tr>`;
+      return;
+    }
+
+    const stuck   = (data || []).filter(u => !u.has_profile);
+    const total   = (data || []).length;
+    const members = (data || []).filter(u => u.has_profile).length;
+
+    document.getElementById('monitor-stats').innerHTML = `
+      <div class="stat-card"><div class="stat-card__val">${total}</div><div class="stat-card__label">Total Auth Users</div></div>
+      <div class="stat-card"><div class="stat-card__val">${members}</div><div class="stat-card__label">With Profile</div></div>
+      <div class="stat-card" style="${stuck.length > 0 ? 'border-color:var(--red)' : ''}">
+        <div class="stat-card__val" style="${stuck.length > 0 ? 'color:var(--red)' : ''}">${stuck.length}</div>
+        <div class="stat-card__label">Stuck (no profile)</div>
+      </div>`;
+
+    tbody.innerHTML = stuck.length === 0
+      ? '<tr><td colspan="4" class="text-mid" style="text-align:center;padding:32px">✓ No stuck users.</td></tr>'
+      : stuck.map(u => `
+          <tr>
+            <td>${u.email}</td>
+            <td style="color:var(--mid)">${new Date(u.created_at).toLocaleString('en-ZA')}</td>
+            <td style="color:var(--mid)">${u.last_sign_in ? new Date(u.last_sign_in).toLocaleString('en-ZA') : '—'}</td>
+            <td><span class="badge badge-red">No profile</span></td>
+          </tr>`).join('');
+  }
+
+  async function loadRegLog() {
+    const { data } = await db.from('registration_log')
+      .select('*').order('created_at', { ascending: false }).limit(50);
+
+    const eventBadge = e => ({
+      otp_sent:     '<span class="badge badge-grey">OTP Sent</span>',
+      otp_resent:   '<span class="badge badge-grey">OTP Resent</span>',
+      otp_verified: '<span class="badge badge-green">Verified</span>',
+      profile_saved:'<span class="badge badge-lime">Registered</span>'
+    })[e] || `<span class="badge badge-grey">${e}</span>`;
+
+    document.getElementById('reglog-tbody').innerHTML = (data || []).length === 0
+      ? '<tr><td colspan="3" style="text-align:center;padding:32px;color:var(--mid)">No events logged yet.</td></tr>'
+      : (data || []).map(r => `
+          <tr>
+            <td>${r.email}</td>
+            <td>${eventBadge(r.event)}</td>
+            <td style="color:var(--mid);font-size:.82rem">${new Date(r.created_at).toLocaleString('en-ZA')}</td>
+          </tr>`).join('');
+  }
+
+  // Close modal on overlay click
+  document.getElementById('class-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeClassModal();
+  });
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js")
+        .then(r => console.log("SW registered:", r.scope))
+        .catch(e => console.warn("SW failed:", e));
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Payment Confirmed – Kommetjie Muay Thai</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="icon" href="logo.png"/>
+  <meta name="theme-color" content="#c4f135"/>
+  <style>
+    .success-wrap {
+      min-height: 70vh;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .success-card {
+      background: var(--card); border: 1.5px solid var(--lime);
+      border-radius: var(--radius); padding: 48px 40px;
+      text-align: center; max-width: 480px; width: 100%;
+    }
+    .success-icon { font-size: 3.5rem; margin-bottom: 20px; }
+    .success-card h2 { margin-bottom: 12px; }
+    .success-card p  { margin-bottom: 8px; font-size: .95rem; }
+    .detail-row {
+      display: flex; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      font-size: .88rem;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-row span:first-child { color: var(--mid); }
+    .detail-row span:last-child  { font-weight: 600; color: var(--text); }
+    .details-box {
+      background: #111; border-radius: var(--radius-sm);
+      padding: 4px 16px; margin: 24px 0; text-align: left;
+    }
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav__inner">
+    <a class="nav__logo" href="index.html">
+      <img src="logo.png" alt="KMT" height="36"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+      <span style="display:none">KMT</span>
+    </a>
+    <div class="nav-spacer"></div>
+    <div id="nav-user"></div>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="container">
+    <div class="success-wrap">
+      <div id="success-card" class="success-card" style="display:none">
+        <div class="success-icon">🥊</div>
+        <h2>You're all in!</h2>
+        <p>Your membership payment was confirmed.</p>
+        <div class="details-box" id="details-box"></div>
+        <a href="dashboard.html" class="btn btn-primary btn-full">Book your first class →</a>
+      </div>
+
+      <div id="error-card" class="success-card" style="display:none;border-color:var(--red)">
+        <div class="success-icon">⚠️</div>
+        <h2>Payment not confirmed</h2>
+        <p id="error-msg" style="color:#ef9a9a"></p>
+        <a href="dashboard.html" class="btn btn-outline btn-full mt-16">Go to dashboard</a>
+      </div>
+
+      <div id="loading-card" class="success-card">
+        <div class="spinner" style="width:36px;height:36px;margin:0 auto 20px"></div>
+        <p>Verifying your payment…</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  (async () => {
+    const session = await getSession();
+    if (session) {
+      const profile = await getProfile(session.user.id);
+      renderNav(profile);
+    }
+
+    const params  = new URLSearchParams(window.location.search);
+    const ref     = params.get('reference') || params.get('trxref');
+
+    if (!ref) {
+      showError('No payment reference found. Please contact support if you were charged.');
+      return;
+    }
+
+    try {
+      const res  = await fetch(`/.netlify/functions/verify-payment?reference=${encodeURIComponent(ref)}`);
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        showError(data.message || 'Payment could not be verified. Please contact support.');
+        return;
+      }
+
+      // Mark member as active in Supabase
+      if (session) {
+        await db.from('profiles').update({ active: true }).eq('id', session.user.id);
+      }
+
+      document.getElementById('details-box').innerHTML = `
+        <div class="detail-row"><span>Plan</span><span>${data.plan}</span></div>
+        <div class="detail-row"><span>Amount</span><span>R${data.amount}/month</span></div>
+        <div class="detail-row"><span>Email</span><span>${data.email}</span></div>
+        <div class="detail-row"><span>Reference</span><span style="font-size:.78rem;color:var(--mid)">${data.reference}</span></div>`;
+
+      document.getElementById('loading-card').style.display = 'none';
+      document.getElementById('success-card').style.display = 'block';
+
+    } catch (err) {
+      showError('An unexpected error occurred. Please contact support.');
+    }
+  })();
+
+  function showError(msg) {
+    document.getElementById('loading-card').style.display = 'none';
+    document.getElementById('error-msg').textContent = msg;
+    document.getElementById('error-card').style.display = 'block';
+  }
+</script>
+</body>
+</html>
