@@ -67,6 +67,51 @@
     .sched-pill .time { font-family: var(--font-head); font-size: 1rem; color: var(--lime); }
     .sched-pill .sep  { color: var(--border); }
     .sched-pill .dur  { font-size: 0.8rem; color: var(--mid); }
+    .carousel-section { padding: 48px 0 0; }
+    .carousel {
+      position: relative; overflow: hidden;
+      border-radius: var(--radius); background: var(--card);
+      border: 1px solid var(--border);
+      aspect-ratio: 16/7;
+      max-height: 420px;
+    }
+    .carousel__track {
+      display: flex; height: 100%;
+      transition: transform .5s cubic-bezier(.4,0,.2,1);
+    }
+    .carousel__slide {
+      min-width: 100%; height: 100%; flex-shrink: 0;
+      position: relative; overflow: hidden;
+    }
+    .carousel__slide img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    .carousel__slide .placeholder {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--card); color: var(--mid); font-size: .9rem;
+      flex-direction: column; gap: 8px;
+    }
+    .carousel__btn {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      background: rgba(0,0,0,.6); border: 1px solid var(--border);
+      color: var(--text); width: 40px; height: 40px;
+      border-radius: 50%; cursor: pointer; font-size: 1rem;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .2s; z-index: 10;
+    }
+    .carousel__btn:hover { background: rgba(196,241,53,.2); border-color: var(--lime); color: var(--lime); }
+    .carousel__btn--prev { left: 12px; }
+    .carousel__btn--next { right: 12px; }
+    .carousel__dots {
+      display: flex; justify-content: center; gap: 6px; margin-top: 14px;
+    }
+    .carousel__dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--border); cursor: pointer; transition: all .2s;
+      border: none; padding: 0;
+    }
+    .carousel__dot.active { background: var(--lime); transform: scale(1.3); }
     .footer {
       border-top: 1px solid var(--border); padding: 40px 24px;
       text-align: center; color: var(--mid); font-size: 0.85rem;
@@ -105,16 +150,22 @@
 <div class="info-bar">
   <div class="info-bar__inner">
     <div class="info-item">
-      <span class="icon">📍</span>
-      <div><strong>Generation Schools Imhoff</strong><br><span>62 Kommetjie Rd, Kommetjie, 7975</span></div>
+      <a href="https://maps.google.com/?q=Generation+Schools+Imhoff,+62+Kommetjie+Road,+Kommetjie,+7975" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none" onmouseover="this.querySelector('strong').style.color='var(--lime)'" onmouseout="this.querySelector('strong').style.color=''">
+        <span class="icon">📍</span>
+        <div><strong style="transition:color .2s">Generation Schools Imhoff</strong><br><span>62 Kommetjie Rd, Kommetjie, 7975</span></div>
+      </a>
     </div>
     <div class="info-item">
-      <span class="icon">🕕</span>
-      <div><strong>Morning Sessions</strong><br><span>Mon–Fri · 6:00 – 7:00 AM</span></div>
+      <a href="#schedule" style="display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none" onmouseover="this.querySelector('strong').style.color='var(--lime)'" onmouseout="this.querySelector('strong').style.color=''">
+        <span class="icon">🕕</span>
+        <div><strong style="transition:color .2s">Morning Sessions</strong><br><span>Mon–Fri · 6:00 – 7:00 AM</span></div>
+      </a>
     </div>
     <div class="info-item">
-      <span class="icon">🌇</span>
-      <div><strong>Afternoon Sessions</strong><br><span>Mon & Wed · 5:30 – 6:30 PM</span></div>
+      <a href="#schedule" style="display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none" onmouseover="this.querySelector('strong').style.color='var(--lime)'" onmouseout="this.querySelector('strong').style.color=''">
+        <span class="icon">🌇</span>
+        <div><strong style="transition:color .2s">Afternoon Sessions</strong><br><span>Mon & Wed · 5:30 – 6:30 PM</span></div>
+      </a>
     </div>
     <div class="info-item">
       <span class="icon">💰</span>
@@ -122,6 +173,29 @@
     </div>
   </div>
 </div>
+
+<section class="carousel-section" id="gallery">
+  <div class="container">
+    <div class="section-label">The Gym</div>
+    <h2>Training in Kommetjie</h2>
+    <div class="carousel" id="carousel" style="margin-top:24px">
+      <div class="carousel__track" id="carousel-track">
+        <div class="carousel__slide">
+          <div class="placeholder"><span style="font-size:2rem">📸</span>Add your gym photos</div>
+        </div>
+        <div class="carousel__slide">
+          <div class="placeholder"><span style="font-size:2rem">📸</span>Training in action</div>
+        </div>
+        <div class="carousel__slide">
+          <div class="placeholder"><span style="font-size:2rem">📸</span>The team</div>
+        </div>
+      </div>
+      <button class="carousel__btn carousel__btn--prev" onclick="carouselMove(-1)">‹</button>
+      <button class="carousel__btn carousel__btn--next" onclick="carouselMove(1)">›</button>
+    </div>
+    <div class="carousel__dots" id="carousel-dots"></div>
+  </div>
+</section>
 
 <section class="section" id="schedule">
   <div class="container">
@@ -198,6 +272,37 @@
   })();
 </script>
 <script>
+  // ── Carousel ─────────────────────────────────────────────
+  (function() {
+    let current = 0;
+    const track  = document.getElementById('carousel-track');
+    const dotsEl = document.getElementById('carousel-dots');
+    if (!track) return;
+
+    const slides = track.querySelectorAll('.carousel__slide');
+    const total  = slides.length;
+
+    // Build dots
+    slides.forEach((_, i) => {
+      const d = document.createElement('button');
+      d.className = 'carousel__dot' + (i === 0 ? ' active' : '');
+      d.onclick = () => goTo(i);
+      dotsEl.appendChild(d);
+    });
+
+    function goTo(n) {
+      current = (n + total) % total;
+      track.style.transform = `translateX(-${current * 100}%)`;
+      dotsEl.querySelectorAll('.carousel__dot').forEach((d, i) =>
+        d.classList.toggle('active', i === current));
+    }
+
+    window.carouselMove = delta => goTo(current + delta);
+
+    // Auto-advance every 5 seconds
+    setInterval(() => goTo(current + 1), 5000);
+  })();
+
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("/sw.js")
