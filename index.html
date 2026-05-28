@@ -180,15 +180,7 @@
     <h2>Training in Kommetjie</h2>
     <div class="carousel" id="carousel" style="margin-top:24px">
       <div class="carousel__track" id="carousel-track">
-        <div class="carousel__slide">
-          <div class="placeholder"><span style="font-size:2rem">📸</span>Add your gym photos</div>
-        </div>
-        <div class="carousel__slide">
-          <div class="placeholder"><span style="font-size:2rem">📸</span>Training in action</div>
-        </div>
-        <div class="carousel__slide">
-          <div class="placeholder"><span style="font-size:2rem">📸</span>The team</div>
-        </div>
+        <!-- Slides are built from GALLERY_IMAGES in the script below -->
       </div>
       <button class="carousel__btn carousel__btn--prev" onclick="carouselMove(-1)">‹</button>
       <button class="carousel__btn carousel__btn--next" onclick="carouselMove(1)">›</button>
@@ -273,17 +265,39 @@
 </script>
 <script>
   // ── Carousel ─────────────────────────────────────────────
+  // ↓↓↓ TO ADD OR REMOVE IMAGES: edit this array only ↓↓↓
+  const GALLERY_IMAGES = [
+    { src: 'gallery/1.jpg',  alt: 'PFC 13 — Luke Skinner vs Raymond Shaw' },
+    { src: 'gallery/6.jpg',  alt: 'Fight night — in the ring' },
+    { src: 'gallery/9.jpg',  alt: 'Hand raised — victory' },
+    { src: 'gallery/4.jpg',  alt: 'Weigh-in at PFC' },
+    { src: 'gallery/7.jpg',  alt: 'Luke Skinner — fight ready' },
+    { src: 'gallery/5.jpg',  alt: 'Training at the academy' },
+    { src: 'gallery/8.jpg',  alt: 'Cape Fight League — face off' },
+    { src: 'gallery/10.jpg', alt: 'CFL — pre-fight staredown' },
+    { src: 'gallery/3.jpg',  alt: 'Weigh-in staredown' },
+    { src: 'gallery/2.jpg',  alt: 'Post-fight — battle worn' },
+  ];
+  // ↑↑↑ Add a new line: { src: 'gallery/11.jpg', alt: 'Description' }
+  //     Remove a line to hide that image. Order = display order.
+
   (function() {
     let current = 0;
+    let timer;
     const track  = document.getElementById('carousel-track');
     const dotsEl = document.getElementById('carousel-dots');
     if (!track) return;
 
-    const slides = track.querySelectorAll('.carousel__slide');
-    const total  = slides.length;
+    // Build slides from config array
+    track.innerHTML = GALLERY_IMAGES.map(img => `
+      <div class="carousel__slide">
+        <img src="${img.src}" alt="${img.alt}" loading="lazy"/>
+      </div>`).join('');
+
+    const total = GALLERY_IMAGES.length;
 
     // Build dots
-    slides.forEach((_, i) => {
+    GALLERY_IMAGES.forEach((_, i) => {
       const d = document.createElement('button');
       d.className = 'carousel__dot' + (i === 0 ? ' active' : '');
       d.onclick = () => goTo(i);
@@ -295,12 +309,29 @@
       track.style.transform = `translateX(-${current * 100}%)`;
       dotsEl.querySelectorAll('.carousel__dot').forEach((d, i) =>
         d.classList.toggle('active', i === current));
+      resetTimer();
+    }
+
+    function resetTimer() {
+      clearInterval(timer);
+      timer = setInterval(() => goTo(current + 1), 5000);
     }
 
     window.carouselMove = delta => goTo(current + delta);
 
-    // Auto-advance every 5 seconds
-    setInterval(() => goTo(current + 1), 5000);
+    // Pause on hover
+    document.getElementById('carousel').addEventListener('mouseenter', () => clearInterval(timer));
+    document.getElementById('carousel').addEventListener('mouseleave', resetTimer);
+
+    // Touch swipe support
+    let touchStartX = 0;
+    track.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+    track.addEventListener('touchend',   e => {
+      const diff = touchStartX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 50) goTo(current + (diff > 0 ? 1 : -1));
+    });
+
+    resetTimer();
   })();
 
   if ("serviceWorker" in navigator) {
