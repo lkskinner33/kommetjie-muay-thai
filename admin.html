@@ -176,8 +176,7 @@
         <div class="card mt-32" style="background:rgba(196,241,53,.04);border-color:rgba(196,241,53,.2)">
           <h4 style="margin-bottom:12px">🔗 Supabase Auth Logs</h4>
           <p style="font-size:.88rem;margin-bottom:12px">For deeper investigation, check the live auth logs directly in Supabase:</p>
-          <a href="https://supabase.com/dashboard/project/oojnckwtsooaotumdunp/logs/auth-logs"
-             target="_blank" class="btn btn-outline btn-sm">Open Auth Logs in Supabase →</a>
+          <button class="btn btn-outline btn-sm" onclick="openSupabaseLogs()">Open Auth Logs in Supabase →</button>
         </div>
 
       </div>
@@ -543,6 +542,12 @@
             <td>${eventBadge(r.event)}</td>
             <td style="color:var(--mid);font-size:.82rem">${new Date(r.created_at).toLocaleString('en-ZA')}</td>
           </tr>`).join('');
+  }
+
+  function openSupabaseLogs() {
+    // Build the URL dynamically from the configured Supabase URL so no project ID is hardcoded
+    const projectRef = SUPABASE_URL.replace('https://','').replace('.supabase.co','');
+    window.open('https://supabase.com/dashboard/project/' + projectRef + '/logs/auth-logs', '_blank');
   }
 
   // Close modal on overlay click
