@@ -70,10 +70,10 @@
     .carousel-section { padding: 48px 0 0; }
     .carousel {
       position: relative; overflow: hidden;
-      border-radius: var(--radius); background: var(--card);
+      border-radius: var(--radius); background: #0a0a0a;
       border: 1px solid var(--border);
-      aspect-ratio: 16/7;
-      max-height: 420px;
+      aspect-ratio: 16/9;
+      max-height: 560px;
     }
     .carousel__track {
       display: flex; height: 100%;
@@ -84,7 +84,8 @@
       position: relative; overflow: hidden;
     }
     .carousel__slide img {
-      width: 100%; height: 100%; object-fit: cover; display: block;
+      width: 100%; height: 100%; object-fit: contain; display: block;
+      background: #0a0a0a;
     }
     .carousel__slide .placeholder {
       width: 100%; height: 100%;
@@ -176,9 +177,7 @@
 
 <section class="carousel-section" id="gallery">
   <div class="container">
-    <div class="section-label">The Gym</div>
-    <h2>Training in Kommetjie</h2>
-    <div class="carousel" id="carousel" style="margin-top:24px">
+    <div class="carousel" id="carousel">
       <div class="carousel__track" id="carousel-track">
         <!-- Slides are built from GALLERY_IMAGES in the script below -->
       </div>
