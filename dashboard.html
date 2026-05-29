@@ -32,6 +32,19 @@
     .class-card__count  { font-size:.75rem; color:var(--mid); margin-top:8px; }
     .booked-label       { font-size:.75rem; font-weight:700; letter-spacing:.8px; color:var(--lime); margin-bottom:10px; text-transform:uppercase; }
     .locked-msg         { font-size:.75rem; color:var(--mid); margin-top:8px; }
+    .dash-panel { display:none; }
+    .dash-panel.active { display:block; }
+    .booking-list-item {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:var(--radius); padding:18px 20px; margin-bottom:12px;
+      display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    }
+    .booking-list-item--booked { border-color:var(--lime); }
+    .booking-list-item--past   { opacity:.75; }
+    .booking-list-item__date   { font-size:.72rem; font-weight:700; letter-spacing:1.5px; color:var(--mid); text-transform:uppercase; min-width:90px; }
+    .booking-list-item__time   { font-family:var(--font-head); font-size:1.1rem; color:var(--lime); }
+    .booking-list-item__name   { font-size:.88rem; color:#ccc; margin-top:2px; }
+    .booking-list-item__right  { margin-left:auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
   </style>
 </head>
 <body>
@@ -56,21 +69,39 @@
 
     <div id="main" style="display:none">
 
-      <div class="flex-between mb-32">
+      <div class="flex-between mb-24">
         <div>
           <h1 id="greeting"></h1>
           <p id="subtext" style="margin-top:4px"></p>
         </div>
       </div>
 
-      <!-- Week navigation -->
-      <div class="week-nav">
-        <button class="btn btn-outline btn-sm" id="btn-prev" onclick="changeWeek(-1)">← Prev</button>
-        <h2 id="week-label" class="text-center"></h2>
-        <button class="btn btn-outline btn-sm" id="btn-next" onclick="changeWeek(1)">Next →</button>
+      <!-- Tabs -->
+      <div class="tabs mb-0">
+        <button class="tab-btn active" id="tab-upcoming-btn" onclick="switchDashTab('upcoming')">Upcoming</button>
+        <button class="tab-btn"        id="tab-book-btn"     onclick="switchDashTab('book')">Book Classes</button>
+        <button class="tab-btn"        id="tab-past-btn"     onclick="switchDashTab('past')">Past</button>
       </div>
 
-      <div id="week-grid" class="week-grid"></div>
+      <!-- UPCOMING TAB -->
+      <div class="dash-panel active" id="panel-upcoming">
+        <div id="upcoming-content" style="padding-top:24px"></div>
+      </div>
+
+      <!-- BOOK TAB -->
+      <div class="dash-panel" id="panel-book">
+        <div class="week-nav" style="padding-top:24px">
+          <button class="btn btn-outline btn-sm" id="btn-prev" onclick="changeWeek(-1)">← Prev</button>
+          <h2 id="week-label" class="text-center"></h2>
+          <button class="btn btn-outline btn-sm" id="btn-next" onclick="changeWeek(1)">Next →</button>
+        </div>
+        <div id="week-grid" class="week-grid"></div>
+      </div>
+
+      <!-- PAST TAB -->
+      <div class="dash-panel" id="panel-past">
+        <div id="past-content" style="padding-top:24px"></div>
+      </div>
 
     </div>
   </div>
@@ -97,13 +128,12 @@
     const firstName = currentProfile.full_name.split(' ')[0];
     const hour      = new Date().getHours();
     const greet     = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-    document.getElementById('greeting').textContent   = `${greet}, ${firstName} 👊`;
-    document.getElementById('subtext').textContent    = 'Book your classes for the week below.';
+    document.getElementById('greeting').textContent = `${greet}, ${firstName} 👊`;
+    document.getElementById('subtext').textContent  = 'Your classes at Kommetjie Muay Thai.';
 
-    // Load classes & bookings
     const [{ data: classes }, { data: bookings }] = await Promise.all([
       db.from('classes').select('*').eq('active', true).order('day_of_week').order('start_time'),
-      db.from('bookings').select('*').eq('user_id', currentProfile.id).eq('status','confirmed')
+      db.from('bookings').select('*').eq('user_id', currentProfile.id).in('status',['confirmed','cancelled'])
     ]);
 
     allClasses  = classes  || [];
@@ -112,14 +142,100 @@
     document.getElementById('loading-screen').style.display = 'none';
     document.getElementById('main').style.display           = 'block';
 
+    renderUpcoming();
+    renderPast();
     renderWeek();
   })();
+
+  // ── Tab switching ─────────────────────────────────────────
+
+  function switchDashTab(tab) {
+    ['upcoming','book','past'].forEach(t => {
+      document.getElementById(`tab-${t}-btn`).classList.toggle('active', t === tab);
+      document.getElementById(`panel-${t}`).classList.toggle('active', t === tab);
+    });
+  }
+
+  // ── Upcoming bookings ─────────────────────────────────────
+
+  function renderUpcoming() {
+    const today = toDateString(new Date());
+    const upcoming = allBookings
+      .filter(b => b.status === 'confirmed' && b.class_date >= today)
+      .sort((a, b) => a.class_date.localeCompare(b.class_date) ||
+                      a.class_id.localeCompare(b.class_id));
+
+    const el = document.getElementById('upcoming-content');
+
+    if (!upcoming.length) {
+      el.innerHTML = `<div class="empty-state"><div class="emoji">📅</div>No upcoming classes booked.<br>
+        <button class="btn btn-primary btn-sm mt-16" onclick="switchDashTab('book')">Book a class →</button></div>`;
+      return;
+    }
+
+    el.innerHTML = upcoming.map(b => {
+      const cls = allClasses.find(c => c.id === b.class_id);
+      if (!cls) return '';
+      const cancellable = canCancel(b.class_date, cls.start_time);
+      const dateLabel   = new Date(b.class_date + 'T12:00:00')
+        .toLocaleDateString('en-ZA', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+      return `
+        <div class="booking-list-item booking-list-item--booked">
+          <div>
+            <div class="booking-list-item__date">${dateLabel}</div>
+            <div class="booking-list-item__time">${formatTime(cls.start_time)} – ${formatTime(cls.end_time)}</div>
+            <div class="booking-list-item__name">${cls.name}</div>
+          </div>
+          <div class="booking-list-item__right">
+            <span class="badge badge-lime">✓ Booked</span>
+            ${cancellable
+              ? `<button class="btn btn-outline btn-sm" onclick="cancelBooking('${b.id}','${cls.id}','${b.class_date}','${cls.start_time}')">Cancel</button>`
+              : `<span style="font-size:.75rem;color:var(--mid)">🔒 Locked</span>`}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── Past bookings ─────────────────────────────────────────
+
+  function renderPast() {
+    const today = toDateString(new Date());
+    const past = allBookings
+      .filter(b => b.class_date < today)
+      .sort((a, b) => b.class_date.localeCompare(a.class_date));
+
+    const el = document.getElementById('past-content');
+
+    if (!past.length) {
+      el.innerHTML = `<div class="empty-state"><div class="emoji">🥊</div>No past classes yet. Get training!</div>`;
+      return;
+    }
+
+    el.innerHTML = past.map(b => {
+      const cls = allClasses.find(c => c.id === b.class_id);
+      if (!cls) return '';
+      const dateLabel = new Date(b.class_date + 'T12:00:00')
+        .toLocaleDateString('en-ZA', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+      const attended  = b.status === 'confirmed';
+      return `
+        <div class="booking-list-item booking-list-item--past">
+          <div>
+            <div class="booking-list-item__date">${dateLabel}</div>
+            <div class="booking-list-item__time">${formatTime(cls.start_time)} – ${formatTime(cls.end_time)}</div>
+            <div class="booking-list-item__name">${cls.name}</div>
+          </div>
+          <div class="booking-list-item__right">
+            <span class="badge ${attended ? 'badge-green' : 'badge-grey'}">${attended ? '✓ Attended' : 'Cancelled'}</span>
+          </div>
+        </div>`;
+    }).join('');
+  }
 
   // ── Week rendering ────────────────────────────────────────
 
   function changeWeek(delta) {
     weekOffset += delta;
-    if (weekOffset < 0) weekOffset = 0; // can't go to past weeks
+    if (weekOffset < 0) weekOffset = 0;
     renderWeek();
   }
 
@@ -252,6 +368,8 @@
 
     showToast('Booked! See you there 🥊','success');
     renderWeek();
+    renderUpcoming();
+    renderPast();
   }
 
   // ── Cancel ────────────────────────────────────────────────
@@ -276,9 +394,11 @@
       return;
     }
 
-    allBookings = allBookings.filter(b => b.id !== bookingId);
+    allBookings = allBookings.map(b => b.id === bookingId ? {...b, status:'cancelled', cancelled_at: new Date().toISOString()} : b);
     showToast('Booking cancelled.','info');
     renderWeek();
+    renderUpcoming();
+    renderPast();
   }
 </script>
 <script>
