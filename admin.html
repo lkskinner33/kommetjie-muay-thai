@@ -69,6 +69,7 @@
         <button class="tab-btn"        onclick="switchTab('members')">Members</button>
         <button class="tab-btn"        onclick="switchTab('admins')">Admins</button>
         <button class="tab-btn"        onclick="switchTab('monitoring')">Monitoring</button>
+        <button class="tab-btn"        onclick="switchTab('dropins')">Drop-Ins</button>
       </div>
 
       <!-- SCHEDULE TAB -->
@@ -181,6 +182,21 @@
 
       </div>
 
+      <!-- DROP-INS TAB -->
+      <div class="tab-panel" id="tab-dropins">
+        <div class="flex-between mb-24">
+          <h3>Drop-In Bookings</h3>
+          <button class="btn btn-outline btn-sm" onclick="loadDropins()">↻ Refresh</button>
+        </div>
+        <div class="stat-grid" id="dropin-stats" style="margin-bottom:28px"></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Class</th><th>Date</th><th>Status</th><th>Reference</th></tr></thead>
+            <tbody id="dropin-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
     </div><!-- /main -->
   </div>
 </div>
@@ -253,13 +269,14 @@
 
   function switchTab(name) {
     document.querySelectorAll('.tab-btn').forEach((b,i) => {
-      const names = ['schedule','bookings','members','admins','monitoring'];
+      const names = ['schedule','bookings','members','admins','monitoring','dropins'];
       b.classList.toggle('active', names[i] === name);
     });
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.getElementById(`tab-${name}`).classList.add('active');
     if (name === 'admins')     loadAdmins();
     if (name === 'monitoring') loadMonitoring();
+    if (name === 'dropins')    loadDropins();
   }
 
   // ── Stats ─────────────────────────────────────────────────
@@ -541,6 +558,33 @@
             <td>${r.email}</td>
             <td>${eventBadge(r.event)}</td>
             <td style="color:var(--mid);font-size:.82rem">${new Date(r.created_at).toLocaleString('en-ZA')}</td>
+          </tr>`).join('');
+  }
+
+  async function loadDropins() {
+    const { data } = await db.from('dropin_bookings')
+      .select('*, classes(name,start_time,end_time)')
+      .order('created_at', { ascending: false }).limit(100);
+
+    const all       = data || [];
+    const confirmed = all.filter(d => d.status === 'confirmed').length;
+    const pending   = all.filter(d => d.status === 'pending').length;
+
+    document.getElementById('dropin-stats').innerHTML = `
+      <div class="stat-card"><div class="stat-card__val">${all.length}</div><div class="stat-card__label">Total Drop-Ins</div></div>
+      <div class="stat-card"><div class="stat-card__val">${confirmed}</div><div class="stat-card__label">Confirmed</div></div>
+      <div class="stat-card"><div class="stat-card__val">${pending}</div><div class="stat-card__label">Pending Payment</div></div>`;
+
+    document.getElementById('dropin-tbody').innerHTML = all.length === 0
+      ? '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--mid)">No drop-in bookings yet.</td></tr>'
+      : all.map(d => `
+          <tr>
+            <td>${d.name}</td>
+            <td style="color:var(--mid)">${d.email}</td>
+            <td>${d.classes ? d.classes.name : '—'}</td>
+            <td style="color:var(--mid)">${d.class_date}</td>
+            <td><span class="badge ${d.status==='confirmed'?'badge-green':d.status==='pending'?'badge-grey':'badge-red'}">${d.status}</span></td>
+            <td style="font-size:.75rem;color:var(--mid)">${d.payment_reference || '—'}</td>
           </tr>`).join('');
   }
 
