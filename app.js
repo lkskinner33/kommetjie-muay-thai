@@ -128,11 +128,14 @@ function renderNav(profile) {
       <span class="nav-name">${profile.full_name.split(' ')[0]}</span>
       ${profile.role === 'admin' ? '<a href="admin.html" class="nav-link">Admin</a>' : ''}
       <a href="dashboard.html" class="nav-link">My Classes</a>
+      <a href="membership.html" class="nav-link">Membership</a>
       <button class="btn btn-outline btn-sm" onclick="logout()">Log out</button>`;
   } else {
     nav.innerHTML = `
-      <a href="login.html"    class="nav-link">Log in</a>
-      <a href="register.html" class="btn btn-primary btn-sm">Join</a>`;
+      <a href="membership.html" class="nav-link">Membership</a>
+      <a href="dropin.html"     class="nav-link">Drop-In</a>
+      <a href="login.html"      class="nav-link">Log in</a>
+      <a href="register.html"   class="btn btn-primary btn-sm">Join</a>`;
   }
 }
 
