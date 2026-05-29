@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Membership – Kommetjie Muay Thai</title>
+  <link rel="stylesheet" href="style.css"/>
+  <link rel="icon" href="logo.png"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#c4f135"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
+  <style>
+    .membership-hero { padding:64px 0 48px; border-bottom:1px solid var(--border); margin-bottom:56px; }
+    .membership-hero__tag { font-size:.72rem;font-weight:700;letter-spacing:2.5px;color:var(--lime);text-transform:uppercase;margin-bottom:12px; }
+
+    .plan-card {
+      background:var(--card); border:1.5px solid var(--lime);
+      border-radius:var(--radius); padding:36px; margin-bottom:32px;
+      display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:start;
+    }
+    @media(max-width:600px){ .plan-card { grid-template-columns:1fr; } }
+    .plan-card__price { font-family:var(--font-head); font-size:3.5rem; color:var(--lime); line-height:1; }
+    .plan-card__per   { font-size:.9rem; color:var(--mid); margin-top:4px; }
+    .plan-card__name  { font-family:var(--font-head); font-size:1.4rem; margin-bottom:8px; }
+    .plan-card__desc  { font-size:.9rem; color:#aaa; margin-bottom:20px; }
+
+    .includes-list { list-style:none; padding:0; margin:0; }
+    .includes-list li {
+      padding:10px 0; border-bottom:1px solid var(--border);
+      font-size:.9rem; color:#ccc; display:flex; gap:10px; align-items:flex-start;
+    }
+    .includes-list li:last-child { border-bottom:none; }
+    .includes-list .tick { color:var(--lime); font-size:1rem; flex-shrink:0; }
+
+    .dropin-card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:var(--radius); padding:28px; margin-bottom:32px;
+      display:grid; grid-template-columns:1fr auto; gap:24px; align-items:center;
+    }
+    @media(max-width:500px){ .dropin-card { grid-template-columns:1fr; } }
+    .dropin-card__price { font-family:var(--font-head); font-size:2.4rem; color:var(--text); line-height:1; }
+    .dropin-card__per   { font-size:.85rem; color:var(--mid); }
+
+    .compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:48px; }
+    @media(max-width:500px){ .compare-grid { grid-template-columns:1fr; } }
+    .compare-col { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+    .compare-col h4 { font-family:var(--font-head); font-size:1rem; margin-bottom:12px; }
+    .compare-col ul { list-style:none; padding:0; }
+    .compare-col li { font-size:.85rem; color:#aaa; padding:5px 0; border-bottom:1px solid var(--border); }
+    .compare-col li:last-child { border-bottom:none; }
+
+    .schedule-section { margin-bottom:48px; }
+    .sched-row { display:flex; align-items:center; gap:16px; padding:14px 0; border-bottom:1px solid var(--border); }
+    .sched-row:last-child { border-bottom:none; }
+    .sched-row__day  { font-family:var(--font-head); font-size:.85rem; color:var(--mid); width:110px; flex-shrink:0; }
+    .sched-row__time { font-family:var(--font-head); font-size:1rem; color:var(--lime); }
+    .sched-row__name { font-size:.88rem; color:#ccc; margin-left:auto; }
+  </style>
+</head>
+<body>
+<nav class="nav">
+  <div class="nav__inner">
+    <a class="nav__logo" href="index.html">
+      <img src="logo.png" alt="KMT" height="36"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
+      <span style="display:none">KMT</span>
+    </a>
+    <div class="nav-spacer"></div>
+    <div id="nav-user"></div>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="container--narrow">
+
+    <div class="membership-hero">
+      <div class="membership-hero__tag">Membership</div>
+      <h1>Train Without<br><span class="text-lime">Limits</span></h1>
+      <p style="margin-top:12px;max-width:480px">One affordable monthly membership gives you unlimited access to every class, every week. No lock-in, cancel anytime.</p>
+    </div>
+
+    <!-- Member plan -->
+    <div class="plan-card">
+      <div>
+        <div class="plan-card__name">Monthly Membership</div>
+        <div class="plan-card__desc">Unlimited classes · Cancel anytime</div>
+        <div class="plan-card__price">R250</div>
+        <div class="plan-card__per">per month · billed monthly</div>
+        <div id="member-cta" style="margin-top:24px"></div>
+      </div>
+      <div>
+        <ul class="includes-list">
+          <li><span class="tick">✓</span>Unlimited access to all weekly classes</li>
+          <li><span class="tick">✓</span>Morning sessions — Mon–Fri 6:00–7:00 AM</li>
+          <li><span class="tick">✓</span>Afternoon sessions — Mon & Wed 5:30–6:30 PM</li>
+          <li><span class="tick">✓</span>Online booking &amp; cancellation via app</li>
+          <li><span class="tick">✓</span>Training at Generation Schools Imhoff, Kommetjie</li>
+          <li><span class="tick">✓</span>All levels welcome — beginner to advanced</li>
+          <li><span class="tick">✓</span>No lock-in contract — cancel anytime</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Drop-in option -->
+    <div class="dropin-card">
+      <div>
+        <div style="font-size:.72rem;font-weight:700;letter-spacing:2px;color:var(--mid);text-transform:uppercase;margin-bottom:6px">Drop-In</div>
+        <div class="dropin-card__price">R150</div>
+        <div class="dropin-card__per">per class · pay as you go</div>
+        <p style="font-size:.88rem;color:#aaa;margin-top:10px;max-width:360px">Not ready to commit? Book a single class as a guest. No account required.</p>
+      </div>
+      <a href="dropin.html" class="btn btn-outline">Book a Drop-In →</a>
+    </div>
+
+    <!-- Comparison -->
+    <h3 class="mb-16">Member vs Drop-In</h3>
+    <div class="compare-grid">
+      <div class="compare-col" style="border-color:rgba(196,241,53,.3)">
+        <h4 style="color:var(--lime)">Member — R250/mo</h4>
+        <ul>
+          <li>Unlimited classes</li>
+          <li>All 7 weekly sessions</li>
+          <li>App booking &amp; history</li>
+          <li>Cancel anytime</li>
+          <li>Best value if training 2+ times/week</li>
+        </ul>
+      </div>
+      <div class="compare-col">
+        <h4>Drop-In — R150/class</h4>
+        <ul>
+          <li>Single class access</li>
+          <li>No membership required</li>
+          <li>Pay per session</li>
+          <li>Book online instantly</li>
+          <li>Great for visitors or trying it out</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Schedule -->
+    <h3 class="mb-16">Weekly Schedule</h3>
+    <div class="schedule-section">
+      <div id="schedule-list"><div class="spinner" style="margin:24px auto"></div></div>
+    </div>
+
+    <!-- FAQ -->
+    <h3 class="mb-16">Common Questions</h3>
+    <div class="card mb-16">
+      <h4 style="margin-bottom:8px">What do I need to bring?</h4>
+      <p style="font-size:.9rem">Boxing gloves, hand wraps, shin guards, a gumshield, and a groin guard. Bring water and a towel. No bare feet on the mats.</p>
+    </div>
+    <div class="card mb-16">
+      <h4 style="margin-bottom:8px">I've never done Muay Thai before — is it okay to join?</h4>
+      <p style="font-size:.9rem">Absolutely. All levels are welcome. Our sessions are structured to accommodate beginners while still challenging experienced fighters.</p>
+    </div>
+    <div class="card mb-16">
+      <h4 style="margin-bottom:8px">How do I cancel my membership?</h4>
+      <p style="font-size:.9rem">Contact Luke directly. Your membership stays active until the end of the current billing period — no penalties, no hassle.</p>
+    </div>
+    <div class="card mb-32">
+      <h4 style="margin-bottom:8px">Where are classes held?</h4>
+      <p style="font-size:.9rem">
+        <a href="https://maps.google.com/?q=Generation+Schools+Imhoff,+62+Kommetjie+Road,+Kommetjie,+7975" target="_blank">
+          Generation Schools Imhoff, 62 Kommetjie Road, Kommetjie, 7975
+        </a>
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<footer class="footer">
+  <strong>Kommetjie Muay Thai</strong><br>
+  Generation Schools Imhoff · 62 Kommetjie Road, Kommetjie, 7975<br><br>
+  <small>Operated and run by Luke Skinner &nbsp;·&nbsp; Fight Ready. Mind Steady.</small><br><br>
+  <small><a href="terms.html" style="color:var(--mid)">Terms &amp; Policies</a></small>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+(async () => {
+  const session = await getSession();
+  let profile = null;
+  if (session) profile = await getProfile(session.user.id);
+  renderNav(profile);
+
+  // CTA button
+  const cta = document.getElementById('member-cta');
+  if (!profile) {
+    cta.innerHTML = `<a href="register.html" class="btn btn-primary">Join Now →</a>`;
+  } else if (profile.active) {
+    cta.innerHTML = `<span class="badge badge-green" style="font-size:.9rem;padding:8px 16px">✓ You're a member</span>`;
+  } else {
+    cta.innerHTML = `<a href="dashboard.html" class="btn btn-primary">Activate Membership →</a>`;
+  }
+
+  // Load schedule
+  const { data: classes } = await db.from('classes').select('*').eq('active', true).order('day_of_week').order('start_time');
+  const el = document.getElementById('schedule-list');
+  if (!classes || !classes.length) { el.innerHTML = '<p class="text-mid">No classes scheduled yet.</p>'; return; }
+
+  el.innerHTML = classes.map(c => `
+    <div class="sched-row">
+      <div class="sched-row__day">${DAYS[c.day_of_week]}</div>
+      <div class="sched-row__time">${formatTime(c.start_time)} – ${formatTime(c.end_time)}</div>
+      <div class="sched-row__name">${c.name}</div>
+    </div>`).join('');
+})();
+</script>
+</body>
+</html>
