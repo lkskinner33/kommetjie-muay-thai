@@ -37,8 +37,8 @@
 <nav class="nav">
   <div class="nav__inner">
     <a class="nav__logo" href="index.html">
-      <img src="logo.png" alt="KMT" height="36" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
-      <span style="display:none">KMT</span>
+      <img src="logo.png" alt="KMT" height="36" onerror="this.style.display='none'"/>
+      <span>KMT</span>
     </a>
     <div class="nav-spacer"></div>
     <div id="nav-user"></div>
@@ -68,8 +68,6 @@
         <button class="tab-btn"        onclick="switchTab('bookings')">Today's Bookings</button>
         <button class="tab-btn"        onclick="switchTab('members')">Members</button>
         <button class="tab-btn"        onclick="switchTab('admins')">Admins</button>
-        <button class="tab-btn"        onclick="switchTab('monitoring')">Monitoring</button>
-        <button class="tab-btn"        onclick="switchTab('dropins')">Drop-Ins</button>
       </div>
 
       <!-- SCHEDULE TAB -->
@@ -132,68 +130,6 @@
             <input type="email" id="admin-email" placeholder="member@email.com"/>
           </div>
           <button class="btn btn-primary" onclick="grantAdmin()">Grant Admin Access</button>
-        </div>
-      </div>
-
-      <!-- MONITORING TAB -->
-      <div class="tab-panel" id="tab-monitoring">
-
-        <div class="flex-between mb-24">
-          <h3>Registration Monitoring</h3>
-          <button class="btn btn-outline btn-sm" onclick="loadMonitoring()">↻ Refresh</button>
-        </div>
-
-        <!-- Stat cards -->
-        <div class="stat-grid" id="monitor-stats" style="margin-bottom:32px"></div>
-
-        <!-- Stuck users -->
-        <h4 class="mb-16" style="color:var(--mid);font-size:.8rem;letter-spacing:1px;text-transform:uppercase">
-          Auth Users Without a Profile
-          <span style="color:var(--mid);font-weight:400;margin-left:6px">(verified OTP but registration incomplete)</span>
-        </h4>
-        <div class="table-wrap mb-32">
-          <table>
-            <thead>
-              <tr><th>Email</th><th>Signed Up</th><th>Last Sign In</th><th>Status</th></tr>
-            </thead>
-            <tbody id="stuck-tbody"></tbody>
-          </table>
-        </div>
-
-        <!-- Registration log -->
-        <h4 class="mb-16" style="color:var(--mid);font-size:.8rem;letter-spacing:1px;text-transform:uppercase">
-          OTP Event Log
-        </h4>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Email</th><th>Event</th><th>Time</th></tr>
-            </thead>
-            <tbody id="reglog-tbody"></tbody>
-          </table>
-        </div>
-
-        <!-- Supabase log links -->
-        <div class="card mt-32" style="background:rgba(196,241,53,.04);border-color:rgba(196,241,53,.2)">
-          <h4 style="margin-bottom:12px">🔗 Supabase Auth Logs</h4>
-          <p style="font-size:.88rem;margin-bottom:12px">For deeper investigation, check the live auth logs directly in Supabase:</p>
-          <button class="btn btn-outline btn-sm" onclick="openSupabaseLogs()">Open Auth Logs in Supabase →</button>
-        </div>
-
-      </div>
-
-      <!-- DROP-INS TAB -->
-      <div class="tab-panel" id="tab-dropins">
-        <div class="flex-between mb-24">
-          <h3>Drop-In Bookings</h3>
-          <button class="btn btn-outline btn-sm" onclick="loadDropins()">↻ Refresh</button>
-        </div>
-        <div class="stat-grid" id="dropin-stats" style="margin-bottom:28px"></div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Name</th><th>Email</th><th>Class</th><th>Date</th><th>Status</th><th>Reference</th></tr></thead>
-            <tbody id="dropin-tbody"></tbody>
-          </table>
         </div>
       </div>
 
@@ -269,14 +205,12 @@
 
   function switchTab(name) {
     document.querySelectorAll('.tab-btn').forEach((b,i) => {
-      const names = ['schedule','bookings','members','admins','monitoring','dropins'];
+      const names = ['schedule','bookings','members','admins'];
       b.classList.toggle('active', names[i] === name);
     });
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.getElementById(`tab-${name}`).classList.add('active');
-    if (name === 'admins')     loadAdmins();
-    if (name === 'monitoring') loadMonitoring();
-    if (name === 'dropins')    loadDropins();
+    if (name === 'admins') loadAdmins();
   }
 
   // ── Stats ─────────────────────────────────────────────────
@@ -500,98 +434,6 @@
     await db.from('profiles').update({ role: 'member' }).eq('id', id);
     showToast('Admin access revoked.', 'success');
     loadAdmins();
-  }
-
-  // ── Monitoring ────────────────────────────────────────────
-
-  async function loadMonitoring() {
-    await Promise.all([loadStuckUsers(), loadRegLog()]);
-  }
-
-  async function loadStuckUsers() {
-    const { data, error } = await db.rpc('get_stuck_registrations');
-    const tbody = document.getElementById('stuck-tbody');
-
-    if (error) {
-      tbody.innerHTML = `<tr><td colspan="4" style="color:var(--red)">Error: ${error.message}</td></tr>`;
-      return;
-    }
-
-    const stuck   = (data || []).filter(u => !u.has_profile);
-    const total   = (data || []).length;
-    const members = (data || []).filter(u => u.has_profile).length;
-
-    document.getElementById('monitor-stats').innerHTML = `
-      <div class="stat-card"><div class="stat-card__val">${total}</div><div class="stat-card__label">Total Auth Users</div></div>
-      <div class="stat-card"><div class="stat-card__val">${members}</div><div class="stat-card__label">With Profile</div></div>
-      <div class="stat-card" style="${stuck.length > 0 ? 'border-color:var(--red)' : ''}">
-        <div class="stat-card__val" style="${stuck.length > 0 ? 'color:var(--red)' : ''}">${stuck.length}</div>
-        <div class="stat-card__label">Stuck (no profile)</div>
-      </div>`;
-
-    tbody.innerHTML = stuck.length === 0
-      ? '<tr><td colspan="4" class="text-mid" style="text-align:center;padding:32px">✓ No stuck users.</td></tr>'
-      : stuck.map(u => `
-          <tr>
-            <td>${u.email}</td>
-            <td style="color:var(--mid)">${new Date(u.created_at).toLocaleString('en-ZA')}</td>
-            <td style="color:var(--mid)">${u.last_sign_in ? new Date(u.last_sign_in).toLocaleString('en-ZA') : '—'}</td>
-            <td><span class="badge badge-red">No profile</span></td>
-          </tr>`).join('');
-  }
-
-  async function loadRegLog() {
-    const { data } = await db.from('registration_log')
-      .select('*').order('created_at', { ascending: false }).limit(50);
-
-    const eventBadge = e => ({
-      otp_sent:     '<span class="badge badge-grey">OTP Sent</span>',
-      otp_resent:   '<span class="badge badge-grey">OTP Resent</span>',
-      otp_verified: '<span class="badge badge-green">Verified</span>',
-      profile_saved:'<span class="badge badge-lime">Registered</span>'
-    })[e] || `<span class="badge badge-grey">${e}</span>`;
-
-    document.getElementById('reglog-tbody').innerHTML = (data || []).length === 0
-      ? '<tr><td colspan="3" style="text-align:center;padding:32px;color:var(--mid)">No events logged yet.</td></tr>'
-      : (data || []).map(r => `
-          <tr>
-            <td>${r.email}</td>
-            <td>${eventBadge(r.event)}</td>
-            <td style="color:var(--mid);font-size:.82rem">${new Date(r.created_at).toLocaleString('en-ZA')}</td>
-          </tr>`).join('');
-  }
-
-  async function loadDropins() {
-    const { data } = await db.from('dropin_bookings')
-      .select('*, classes(name,start_time,end_time)')
-      .order('created_at', { ascending: false }).limit(100);
-
-    const all       = data || [];
-    const confirmed = all.filter(d => d.status === 'confirmed').length;
-    const pending   = all.filter(d => d.status === 'pending').length;
-
-    document.getElementById('dropin-stats').innerHTML = `
-      <div class="stat-card"><div class="stat-card__val">${all.length}</div><div class="stat-card__label">Total Drop-Ins</div></div>
-      <div class="stat-card"><div class="stat-card__val">${confirmed}</div><div class="stat-card__label">Confirmed</div></div>
-      <div class="stat-card"><div class="stat-card__val">${pending}</div><div class="stat-card__label">Pending Payment</div></div>`;
-
-    document.getElementById('dropin-tbody').innerHTML = all.length === 0
-      ? '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--mid)">No drop-in bookings yet.</td></tr>'
-      : all.map(d => `
-          <tr>
-            <td>${d.name}</td>
-            <td style="color:var(--mid)">${d.email}</td>
-            <td>${d.classes ? d.classes.name : '—'}</td>
-            <td style="color:var(--mid)">${d.class_date}</td>
-            <td><span class="badge ${d.status==='confirmed'?'badge-green':d.status==='pending'?'badge-grey':'badge-red'}">${d.status}</span></td>
-            <td style="font-size:.75rem;color:var(--mid)">${d.payment_reference || '—'}</td>
-          </tr>`).join('');
-  }
-
-  function openSupabaseLogs() {
-    // Build the URL dynamically from the configured Supabase URL so no project ID is hardcoded
-    const projectRef = SUPABASE_URL.replace('https://','').replace('.supabase.co','');
-    window.open('https://supabase.com/dashboard/project/' + projectRef + '/logs/auth-logs', '_blank');
   }
 
   // Close modal on overlay click
