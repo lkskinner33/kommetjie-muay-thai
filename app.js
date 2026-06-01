@@ -109,15 +109,8 @@ function setBtn(btn, loading) {
 function renderNav(profile, session) {
   const nav = document.getElementById('nav-user');
   if (!nav) return;
-  if (profile) {
-    nav.innerHTML = `
-      ${profile.role === 'admin' ? '<a href="admin.html" class="nav-link">Admin</a>' : ''}
-      <a href="dashboard.html" class="nav-link">My Classes</a>
-      <button class="btn btn-outline btn-sm" onclick="logout()">Log out</button>`;
-  } else if (session) {
-    nav.innerHTML = `
-      <a href="dashboard.html" class="nav-link">My Classes</a>
-      <button class="btn btn-outline btn-sm" onclick="logout()">Log out</button>`;
+  if (profile || session) {
+    nav.innerHTML = `<button class="btn btn-outline btn-sm" onclick="logout()">Log out</button>`;
   } else {
     nav.innerHTML = `
       <a href="login.html"    class="nav-link">Log in</a>
