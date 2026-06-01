@@ -111,12 +111,10 @@ function renderNav(profile, session) {
   if (!nav) return;
   if (profile) {
     nav.innerHTML = `
-      <span class="nav-name">${profile.full_name.split(' ')[0]}</span>
       ${profile.role === 'admin' ? '<a href="admin.html" class="nav-link">Admin</a>' : ''}
       <a href="dashboard.html" class="nav-link">My Classes</a>
       <button class="btn btn-outline btn-sm" onclick="logout()">Log out</button>`;
   } else if (session) {
-    // Session exists but profile failed to load — still show logout
     nav.innerHTML = `
       <a href="dashboard.html" class="nav-link">My Classes</a>
       <button class="btn btn-outline btn-sm" onclick="logout()">Log out</button>`;
