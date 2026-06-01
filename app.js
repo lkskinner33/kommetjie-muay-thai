@@ -55,30 +55,16 @@ function formatTime(t) {
   return `${hr > 12 ? hr - 12 : hr || 12}:${m} ${hr < 12 ? 'AM' : 'PM'}`;
 }
 
-function toDateString(d) {
-  // Use local date parts — toISOString() returns UTC which shifts dates back
-  // by 1 day for UTC+2 timezones (e.g. SAST) causing wrong day assignments
-  const y   = d.getFullYear();
-  const m   = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
+function toDateString(d) { return d.toISOString().split('T')[0]; }
 
 // Returns the date (YYYY-MM-DD) for a given day-of-week in the current week
 // weekOffset 0 = this week, 1 = next week
-// Always anchors to THIS week's Monday so past days still show (as "Session passed")
 function dateForDow(dow, weekOffset = 0) {
-  const now = new Date();
-  // Find this week's Monday (ISO week: Mon=start)
-  const todayDow = now.getDay(); // 0=Sun,1=Mon,...6=Sat
-  const daysToMonday = todayDow === 0 ? -6 : 1 - todayDow;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + daysToMonday + weekOffset * 7);
-  monday.setHours(0, 0, 0, 0);
-  // Offset from Monday: Sun(0)=6, Mon(1)=0, Tue(2)=1 ... Sat(6)=5
-  const offset = dow === 0 ? 6 : dow - 1;
-  const d = new Date(monday);
-  d.setDate(monday.getDate() + offset);
+  const now  = new Date();
+  const diff = (dow - now.getDay() + 7) % 7;
+  const d    = new Date(now);
+  d.setDate(now.getDate() + diff + weekOffset * 7);
+  d.setHours(0, 0, 0, 0);
   return toDateString(d);
 }
 
@@ -120,7 +106,7 @@ function setBtn(btn, loading) {
   else btn.textContent = btn.dataset.orig || btn.textContent;
 }
 
-function renderNav(profile) {
+function renderNav(profile, session) {
   const nav = document.getElementById('nav-user');
   if (!nav) return;
   if (profile) {
@@ -128,64 +114,49 @@ function renderNav(profile) {
       <span class="nav-name">${profile.full_name.split(' ')[0]}</span>
       ${profile.role === 'admin' ? '<a href="admin.html" class="nav-link">Admin</a>' : ''}
       <a href="dashboard.html" class="nav-link">My Classes</a>
-      <a href="membership.html" class="nav-link">Membership</a>
+      <button class="btn btn-outline btn-sm" onclick="logout()">Log out</button>`;
+  } else if (session) {
+    // Session exists but profile failed to load — still show logout
+    nav.innerHTML = `
+      <a href="dashboard.html" class="nav-link">My Classes</a>
       <button class="btn btn-outline btn-sm" onclick="logout()">Log out</button>`;
   } else {
     nav.innerHTML = `
-      <a href="membership.html" class="nav-link">Membership</a>
-      <a href="dropin.html"     class="nav-link">Drop-In</a>
-      <a href="login.html"      class="nav-link">Log in</a>
-      <a href="register.html"   class="btn btn-primary btn-sm">Join</a>`;
+      <a href="login.html"    class="nav-link">Log in</a>
+      <a href="register.html" class="btn btn-primary btn-sm">Join</a>`;
   }
 }
 
 // ── PWA Install Prompt ────────────────────────────────────
-// Shows on every session where the app is not already installed.
-// Dismissal is stored in sessionStorage only — resets each browser session.
-// On iOS: shows manual Add to Home Screen instructions (no native API).
-// On Android: uses beforeinstallprompt for one-tap native install.
 
 (function () {
-  // Already running as installed PWA — do nothing
+  // Don't show if already running as installed PWA
   if (window.matchMedia('(display-mode: standalone)').matches ||
       window.navigator.standalone === true) return;
 
-  // Dismissed earlier this session — do nothing
-  if (sessionStorage.getItem('kmt-pwa-dismissed')) return;
+  // Don't show if user dismissed within the last 7 days
+  const dismissed = localStorage.getItem('kmt-pwa-dismissed');
+  if (dismissed && (Date.now() - parseInt(dismissed)) < 7 * 24 * 60 * 60 * 1000) return;
 
-  const isIOS     = /iphone|ipad|ipod/i.test(navigator.userAgent) &&
-                    !/crios/i.test(navigator.userAgent);
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) &&
+                !/crios/i.test(navigator.userAgent); // exclude Chrome on iOS
   const isAndroid = /android/i.test(navigator.userAgent);
 
+  // Only show on mobile
   if (!isIOS && !isAndroid) return;
 
   let deferredPrompt = null;
 
-  // Android: capture the native install prompt
+  // Capture the Android install prompt event
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
     deferredPrompt = e;
-    setTimeout(showSheet, 1500);
+    // Show our custom sheet after a short delay
+    setTimeout(showSheet, 2500);
   });
 
-  // Fallback: if beforeinstallprompt hasn't fired after 3s, show sheet anyway
-  // (handles cases where Chrome delays the event or user hasn't met engagement threshold)
-  let sheetShown = false;
-  function showSheet() {
-    if (sheetShown) return;
-    sheetShown = true;
-    buildSheet();
-  }
-
-  // iOS always needs manual instructions
-  if (isIOS) {
-    setTimeout(showSheet, 1500);
-  } else {
-    // Android fallback — show after 3s even if beforeinstallprompt hasn't fired
-    setTimeout(showSheet, 3000);
-  }
-
   function buildSheet() {
+    // Remove any existing sheet
     document.getElementById('pwa-backdrop')?.remove();
 
     const backdrop = document.createElement('div');
@@ -207,65 +178,48 @@ function renderNav(profile) {
             <div class="pwa-sheet__sub">kommetjiemuaythai.co.za</div>
           </div>
         </div>
-        <p class="pwa-sheet__desc">Add this app to your home screen for instant access to your classes — no App Store needed.</p>
+        <p class="pwa-sheet__desc">Add this app to your home screen for quick access to your classes.</p>
         <div class="ios-steps">
-          <div class="ios-step"><span class="step-icon">1️⃣</span>Tap the <strong>Share</strong> button at the bottom of Safari</div>
-          <div class="ios-step"><span class="step-icon">2️⃣</span>Scroll down and tap <strong>Add to Home Screen</strong></div>
-          <div class="ios-step"><span class="step-icon">3️⃣</span>Tap <strong>Add</strong> in the top right corner</div>
+          <div class="ios-step"><span class="step-icon">1️⃣</span> Tap the <strong>&nbsp;Share&nbsp;</strong> button at the bottom of Safari</div>
+          <div class="ios-step"><span class="step-icon">2️⃣</span> Scroll down and tap <strong>&nbsp;Add to Home Screen</strong></div>
+          <div class="ios-step"><span class="step-icon">3️⃣</span> Tap <strong>&nbsp;Add</strong> in the top right corner</div>
         </div>
         <div class="pwa-sheet__actions">
           <button class="btn btn-outline btn-full" id="pwa-dismiss">Maybe later</button>
         </div>`;
     } else {
-      // Android — show native button if prompt captured, otherwise show manual instructions
-      if (deferredPrompt) {
-        sheet.innerHTML = `
-          <div class="pwa-sheet__handle"></div>
-          <div class="pwa-sheet__top">
-            <div class="pwa-sheet__icon"><img src="icons/icon-192.png" alt="KMT"/></div>
-            <div class="pwa-sheet__info">
-              <div class="pwa-sheet__title">Install KMT App</div>
-              <div class="pwa-sheet__sub">kommetjiemuaythai.co.za</div>
-            </div>
+      sheet.innerHTML = `
+        <div class="pwa-sheet__handle"></div>
+        <div class="pwa-sheet__top">
+          <div class="pwa-sheet__icon"><img src="icons/icon-192.png" alt="KMT"/></div>
+          <div class="pwa-sheet__info">
+            <div class="pwa-sheet__title">Install KMT App</div>
+            <div class="pwa-sheet__sub">kommetjiemuaythai.co.za</div>
           </div>
-          <p class="pwa-sheet__desc">Install the app for instant access to your classes — no Play Store needed.</p>
-          <div class="pwa-sheet__actions">
-            <button class="btn btn-primary btn-full" id="pwa-install">📲 Add to Home Screen</button>
-            <button class="btn btn-outline btn-full" id="pwa-dismiss">Maybe later</button>
-          </div>`;
-      } else {
-        // Chrome hasn't fired beforeinstallprompt yet — show manual instructions
-        sheet.innerHTML = `
-          <div class="pwa-sheet__handle"></div>
-          <div class="pwa-sheet__top">
-            <div class="pwa-sheet__icon"><img src="icons/icon-192.png" alt="KMT"/></div>
-            <div class="pwa-sheet__info">
-              <div class="pwa-sheet__title">Install KMT App</div>
-              <div class="pwa-sheet__sub">kommetjiemuaythai.co.za</div>
-            </div>
-          </div>
-          <p class="pwa-sheet__desc">Add this app to your home screen for instant access to your classes.</p>
-          <div class="ios-steps">
-            <div class="ios-step"><span class="step-icon">1️⃣</span>Tap the <strong>⋮ menu</strong> in the top right of Chrome</div>
-            <div class="ios-step"><span class="step-icon">2️⃣</span>Tap <strong>Add to Home screen</strong></div>
-            <div class="ios-step"><span class="step-icon">3️⃣</span>Tap <strong>Add</strong> to confirm</div>
-          </div>
-          <div class="pwa-sheet__actions">
-            <button class="btn btn-outline btn-full" id="pwa-dismiss">Maybe later</button>
-          </div>`;
-      }
+        </div>
+        <p class="pwa-sheet__desc">Install the app for quick access to your classes — no App Store needed.</p>
+        <div class="pwa-sheet__actions">
+          <button class="btn btn-primary btn-full" id="pwa-install">📲 Add to Home Screen</button>
+          <button class="btn btn-outline btn-full" id="pwa-dismiss">Maybe later</button>
+        </div>`;
     }
 
     backdrop.appendChild(sheet);
     document.body.appendChild(backdrop);
 
+    // Wire up buttons
     document.getElementById('pwa-dismiss')?.addEventListener('click', dismissSheet);
     document.getElementById('pwa-install')?.addEventListener('click', installApp);
 
+    // Animate in
     requestAnimationFrame(() => {
       backdrop.classList.add('show');
       requestAnimationFrame(() => sheet.classList.add('show'));
     });
+  }
+
+  function showSheet() {
+    buildSheet();
   }
 
   function dismissSheet() {
@@ -276,7 +230,7 @@ function renderNav(profile) {
       backdrop.classList.remove('show');
       setTimeout(() => backdrop.remove(), 350);
     }
-    sessionStorage.setItem('kmt-pwa-dismissed', '1');
+    localStorage.setItem('kmt-pwa-dismissed', Date.now().toString());
   }
 
   async function installApp() {
@@ -285,5 +239,13 @@ function renderNav(profile) {
     const { outcome } = await deferredPrompt.userChoice;
     deferredPrompt = null;
     dismissSheet();
+    if (outcome === 'accepted') {
+      localStorage.setItem('kmt-pwa-dismissed', Date.now().toString());
+    }
+  }
+
+  // iOS: show after delay since there's no beforeinstallprompt event
+  if (isIOS) {
+    setTimeout(showSheet, 2500);
   }
 })();
