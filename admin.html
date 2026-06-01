@@ -33,45 +33,40 @@
   </style>
 </head>
 <body>
- 
+
 <nav class="nav">
   <div class="nav__inner">
-    <a class="nav__logo" href="index.html">
-      <img src="logo.png" alt="KMT" height="36" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"/>
-      <span style="display:none">KMT</span>
-    </a>
+
     <div class="nav-spacer"></div>
     <div id="nav-user"></div>
   </div>
 </nav>
- 
+
 <div class="page">
   <div class="container">
- 
+
     <div id="loading-screen" class="loading-screen">
       <div class="spinner"></div><span>Loading admin panel…</span>
     </div>
- 
+
     <div id="main" style="display:none">
- 
+
       <div class="page-title">
         <div style="font-size:.72rem;font-weight:700;letter-spacing:2px;color:var(--lime);text-transform:uppercase;margin-bottom:8px">Admin Panel</div>
         <h1>Kommetjie Muay Thai</h1>
       </div>
- 
+
       <!-- Stats row -->
       <div class="stat-grid" id="stats-grid"></div>
- 
+
       <!-- Tabs -->
       <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('schedule')">Schedule</button>
         <button class="tab-btn"        onclick="switchTab('bookings')">Today's Bookings</button>
         <button class="tab-btn"        onclick="switchTab('members')">Members</button>
         <button class="tab-btn"        onclick="switchTab('admins')">Admins</button>
-        <button class="tab-btn"        onclick="switchTab('monitoring')">Monitoring</button>
-        <button class="tab-btn"        onclick="switchTab('dropins')">Drop-Ins</button>
       </div>
- 
+
       <!-- SCHEDULE TAB -->
       <div class="tab-panel active" id="tab-schedule">
         <div class="flex-between mb-24">
@@ -87,13 +82,13 @@
           </table>
         </div>
       </div>
- 
+
       <!-- BOOKINGS TAB -->
       <div class="tab-panel" id="tab-bookings">
         <h3 class="mb-24">Today's Bookings — <span id="today-label"></span></h3>
         <div id="bookings-content"></div>
       </div>
- 
+
       <!-- MEMBERS TAB -->
       <div class="tab-panel" id="tab-members">
         <div class="flex-between mb-24">
@@ -111,7 +106,7 @@
           </table>
         </div>
       </div>
- 
+
       <!-- ADMINS TAB -->
       <div class="tab-panel" id="tab-admins">
         <div class="flex-between mb-24">
@@ -134,73 +129,11 @@
           <button class="btn btn-primary" onclick="grantAdmin()">Grant Admin Access</button>
         </div>
       </div>
- 
-      <!-- MONITORING TAB -->
-      <div class="tab-panel" id="tab-monitoring">
- 
-        <div class="flex-between mb-24">
-          <h3>Registration Monitoring</h3>
-          <button class="btn btn-outline btn-sm" onclick="loadMonitoring()">↻ Refresh</button>
-        </div>
- 
-        <!-- Stat cards -->
-        <div class="stat-grid" id="monitor-stats" style="margin-bottom:32px"></div>
- 
-        <!-- Stuck users -->
-        <h4 class="mb-16" style="color:var(--mid);font-size:.8rem;letter-spacing:1px;text-transform:uppercase">
-          Auth Users Without a Profile
-          <span style="color:var(--mid);font-weight:400;margin-left:6px">(verified OTP but registration incomplete)</span>
-        </h4>
-        <div class="table-wrap mb-32">
-          <table>
-            <thead>
-              <tr><th>Email</th><th>Signed Up</th><th>Last Sign In</th><th>Status</th></tr>
-            </thead>
-            <tbody id="stuck-tbody"></tbody>
-          </table>
-        </div>
- 
-        <!-- Registration log -->
-        <h4 class="mb-16" style="color:var(--mid);font-size:.8rem;letter-spacing:1px;text-transform:uppercase">
-          OTP Event Log
-        </h4>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Email</th><th>Event</th><th>Time</th></tr>
-            </thead>
-            <tbody id="reglog-tbody"></tbody>
-          </table>
-        </div>
- 
-        <!-- Supabase log links -->
-        <div class="card mt-32" style="background:rgba(196,241,53,.04);border-color:rgba(196,241,53,.2)">
-          <h4 style="margin-bottom:12px">🔗 Supabase Auth Logs</h4>
-          <p style="font-size:.88rem;margin-bottom:12px">For deeper investigation, check the live auth logs directly in Supabase:</p>
-          <button class="btn btn-outline btn-sm" onclick="openSupabaseLogs()">Open Auth Logs in Supabase →</button>
-        </div>
- 
-      </div>
- 
-      <!-- DROP-INS TAB -->
-      <div class="tab-panel" id="tab-dropins">
-        <div class="flex-between mb-24">
-          <h3>Drop-In Bookings</h3>
-          <button class="btn btn-outline btn-sm" onclick="loadDropins()">↻ Refresh</button>
-        </div>
-        <div class="stat-grid" id="dropin-stats" style="margin-bottom:28px"></div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Name</th><th>Email</th><th>Class</th><th>Date</th><th>Status</th><th>Reference</th></tr></thead>
-            <tbody id="dropin-tbody"></tbody>
-          </table>
-        </div>
-      </div>
- 
+
     </div><!-- /main -->
   </div>
 </div>
- 
+
 <!-- Add/Edit Class Modal -->
 <div class="modal-overlay" id="class-modal">
   <div class="modal">
@@ -242,7 +175,7 @@
     </div>
   </div>
 </div>
- 
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
@@ -250,37 +183,35 @@
   let adminProfile = null;
   let allMembers   = [];
   let editingClassId = null;
- 
+
   (async () => {
     const result = await requireAdmin();
     if (!result) return;
     adminProfile = result.profile;
-    renderNav(adminProfile, result.session);
- 
+    renderNav(adminProfile);
+
     await Promise.all([loadStats(), loadSchedule(), loadBookings(), loadMembers()]);
- 
+
     document.getElementById('loading-screen').style.display = 'none';
     document.getElementById('main').style.display = 'block';
     document.getElementById('today-label').textContent =
       new Date().toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   })();
- 
+
   // ── Tabs ──────────────────────────────────────────────────
- 
+
   function switchTab(name) {
     document.querySelectorAll('.tab-btn').forEach((b,i) => {
-      const names = ['schedule','bookings','members','admins','monitoring','dropins'];
+      const names = ['schedule','bookings','members','admins'];
       b.classList.toggle('active', names[i] === name);
     });
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.getElementById(`tab-${name}`).classList.add('active');
-    if (name === 'admins')     loadAdmins();
-    if (name === 'monitoring') loadMonitoring();
-    if (name === 'dropins')    loadDropins();
+    if (name === 'admins') loadAdmins();
   }
- 
+
   // ── Stats ─────────────────────────────────────────────────
- 
+
   async function loadStats() {
     const today = new Date().toISOString().split('T')[0];
     const [{ count: members }, { count: todayBookings }, { count: totalBookings }] = await Promise.all([
@@ -288,15 +219,15 @@
       db.from('bookings').select('*', { count:'exact', head:true }).eq('class_date', today).eq('status','confirmed'),
       db.from('bookings').select('*', { count:'exact', head:true }).eq('status','confirmed')
     ]);
- 
+
     document.getElementById('stats-grid').innerHTML = `
       <div class="stat-card"><div class="stat-card__val">${members||0}</div><div class="stat-card__label">Members</div></div>
       <div class="stat-card"><div class="stat-card__val">${todayBookings||0}</div><div class="stat-card__label">Booked Today</div></div>
       <div class="stat-card"><div class="stat-card__val">${totalBookings||0}</div><div class="stat-card__label">Total Bookings</div></div>`;
   }
- 
+
   // ── Schedule ──────────────────────────────────────────────
- 
+
   async function loadSchedule() {
     const { data } = await db.from('classes').select('*').order('day_of_week').order('start_time');
     const tbody = document.getElementById('schedule-tbody');
@@ -313,7 +244,7 @@
         </td>
       </tr>`).join('') || '<tr><td colspan="6" class="text-mid" style="text-align:center;padding:32px">No classes yet.</td></tr>';
   }
- 
+
   // Class modal
   function openClassModal(cls = null) {
     editingClassId = cls ? cls.id : null;
@@ -326,17 +257,17 @@
     document.getElementById('err-modal').style.display = 'none';
     document.getElementById('class-modal').classList.add('open');
   }
- 
+
   function editClass(cls) { openClassModal(cls); }
   function closeClassModal() {
     document.getElementById('class-modal').classList.remove('open');
     editingClassId = null;
   }
- 
+
   async function saveClass() {
     const err = document.getElementById('err-modal');
     err.style.display = 'none';
- 
+
     const payload = {
       name:        document.getElementById('cls-name').value.trim() || 'Muay Thai',
       day_of_week: parseInt(document.getElementById('cls-dow').value),
@@ -345,61 +276,61 @@
       capacity:    parseInt(document.getElementById('cls-cap').value) || 20,
       active:      true
     };
- 
+
     if (!payload.start_time || !payload.end_time) {
       err.textContent = 'Please set start and end times.';
       err.style.display = 'block';
       return;
     }
- 
+
     const btn = document.getElementById('btn-save-cls');
     setBtn(btn, true);
- 
+
     let error;
     if (editingClassId) {
       ({ error } = await db.from('classes').update(payload).eq('id', editingClassId));
     } else {
       ({ error } = await db.from('classes').insert(payload));
     }
- 
+
     setBtn(btn, false);
- 
+
     if (error) {
       err.textContent = 'Save failed: ' + error.message;
       err.style.display = 'block';
       return;
     }
- 
+
     closeClassModal();
     showToast(editingClassId ? 'Class updated.' : 'Class added.', 'success');
     loadSchedule();
     loadStats();
   }
- 
+
   async function toggleClass(id, active) {
     await db.from('classes').update({ active: !active }).eq('id', id);
     showToast(!active ? 'Class activated.' : 'Class deactivated.', 'success');
     loadSchedule();
   }
- 
+
   // ── Today's Bookings ──────────────────────────────────────
- 
+
   async function loadBookings() {
     const today = new Date().toISOString().split('T')[0];
- 
+
     const { data } = await db.from('bookings')
       .select('*, profiles(full_name, email), classes(name, start_time, end_time)')
       .eq('class_date', today)
       .eq('status', 'confirmed')
       .order('class_id');
- 
+
     const el = document.getElementById('bookings-content');
- 
+
     if (!data || data.length === 0) {
       el.innerHTML = '<div class="empty-state"><div class="emoji">🤷</div>No bookings for today yet.</div>';
       return;
     }
- 
+
     // Group by class
     const grouped = {};
     data.forEach(b => {
@@ -407,7 +338,7 @@
       if (!grouped[key]) grouped[key] = { cls: b.classes, members: [] };
       grouped[key].members.push(b.profiles);
     });
- 
+
     el.innerHTML = Object.values(grouped).map(g => `
       <div class="card mb-16">
         <div class="flex-between mb-16">
@@ -424,15 +355,15 @@
         </div>
       </div>`).join('');
   }
- 
+
   // ── Members ───────────────────────────────────────────────
- 
+
   async function loadMembers() {
     const { data } = await db.from('profiles').select('*').eq('role','member').order('full_name');
     allMembers = data || [];
     renderMembers(allMembers);
   }
- 
+
   function renderMembers(members) {
     document.getElementById('members-tbody').innerHTML = members.map(m => `
       <tr>
@@ -448,21 +379,21 @@
         </td>
       </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--mid)">No members yet.</td></tr>';
   }
- 
+
   function filterMembers() {
     const q = document.getElementById('member-search').value.toLowerCase();
     renderMembers(allMembers.filter(m =>
       m.full_name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)));
   }
- 
+
   async function toggleMember(id, active) {
     await db.from('profiles').update({ active: !active }).eq('id', id);
     showToast(!active ? 'Member activated.' : 'Member deactivated.', 'success');
     loadMembers();
   }
- 
+
   // ── Admins ────────────────────────────────────────────────
- 
+
   async function loadAdmins() {
     const { data } = await db.from('profiles').select('*').eq('role','admin').order('full_name');
     document.getElementById('admins-tbody').innerHTML = (data||[]).map(a => `
@@ -475,125 +406,33 @@
         </td>
       </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--mid)">No admins found.</td></tr>';
   }
- 
+
   async function grantAdmin() {
     const err = document.getElementById('err-admin');
     err.style.display = 'none';
     const email = document.getElementById('admin-email').value.trim().toLowerCase();
     if (!email) { err.textContent = 'Enter an email address.'; err.style.display = 'block'; return; }
- 
+
     const { data } = await db.from('profiles').select('id,full_name').eq('email', email).single();
     if (!data) {
       err.textContent = 'No registered member found with that email.';
       err.style.display = 'block';
       return;
     }
- 
+
     await db.from('profiles').update({ role: 'admin' }).eq('id', data.id);
     document.getElementById('admin-email').value = '';
     showToast(`${data.full_name} is now an admin.`, 'success');
     loadAdmins();
   }
- 
+
   async function revokeAdmin(id) {
     if (!confirm('Remove admin access from this user?')) return;
     await db.from('profiles').update({ role: 'member' }).eq('id', id);
     showToast('Admin access revoked.', 'success');
     loadAdmins();
   }
- 
-  // ── Monitoring ────────────────────────────────────────────
- 
-  async function loadMonitoring() {
-    await Promise.all([loadStuckUsers(), loadRegLog()]);
-  }
- 
-  async function loadStuckUsers() {
-    const { data, error } = await db.rpc('get_stuck_registrations');
-    const tbody = document.getElementById('stuck-tbody');
- 
-    if (error) {
-      tbody.innerHTML = `<tr><td colspan="4" style="color:var(--red)">Error: ${error.message}</td></tr>`;
-      return;
-    }
- 
-    const stuck   = (data || []).filter(u => !u.has_profile);
-    const total   = (data || []).length;
-    const members = (data || []).filter(u => u.has_profile).length;
- 
-    document.getElementById('monitor-stats').innerHTML = `
-      <div class="stat-card"><div class="stat-card__val">${total}</div><div class="stat-card__label">Total Auth Users</div></div>
-      <div class="stat-card"><div class="stat-card__val">${members}</div><div class="stat-card__label">With Profile</div></div>
-      <div class="stat-card" style="${stuck.length > 0 ? 'border-color:var(--red)' : ''}">
-        <div class="stat-card__val" style="${stuck.length > 0 ? 'color:var(--red)' : ''}">${stuck.length}</div>
-        <div class="stat-card__label">Stuck (no profile)</div>
-      </div>`;
- 
-    tbody.innerHTML = stuck.length === 0
-      ? '<tr><td colspan="4" class="text-mid" style="text-align:center;padding:32px">✓ No stuck users.</td></tr>'
-      : stuck.map(u => `
-          <tr>
-            <td>${u.email}</td>
-            <td style="color:var(--mid)">${new Date(u.created_at).toLocaleString('en-ZA')}</td>
-            <td style="color:var(--mid)">${u.last_sign_in ? new Date(u.last_sign_in).toLocaleString('en-ZA') : '—'}</td>
-            <td><span class="badge badge-red">No profile</span></td>
-          </tr>`).join('');
-  }
- 
-  async function loadRegLog() {
-    const { data } = await db.from('registration_log')
-      .select('*').order('created_at', { ascending: false }).limit(50);
- 
-    const eventBadge = e => ({
-      otp_sent:     '<span class="badge badge-grey">OTP Sent</span>',
-      otp_resent:   '<span class="badge badge-grey">OTP Resent</span>',
-      otp_verified: '<span class="badge badge-green">Verified</span>',
-      profile_saved:'<span class="badge badge-lime">Registered</span>'
-    })[e] || `<span class="badge badge-grey">${e}</span>`;
- 
-    document.getElementById('reglog-tbody').innerHTML = (data || []).length === 0
-      ? '<tr><td colspan="3" style="text-align:center;padding:32px;color:var(--mid)">No events logged yet.</td></tr>'
-      : (data || []).map(r => `
-          <tr>
-            <td>${r.email}</td>
-            <td>${eventBadge(r.event)}</td>
-            <td style="color:var(--mid);font-size:.82rem">${new Date(r.created_at).toLocaleString('en-ZA')}</td>
-          </tr>`).join('');
-  }
- 
-  async function loadDropins() {
-    const { data } = await db.from('dropin_bookings')
-      .select('*, classes(name,start_time,end_time)')
-      .order('created_at', { ascending: false }).limit(100);
- 
-    const all       = data || [];
-    const confirmed = all.filter(d => d.status === 'confirmed').length;
-    const pending   = all.filter(d => d.status === 'pending').length;
- 
-    document.getElementById('dropin-stats').innerHTML = `
-      <div class="stat-card"><div class="stat-card__val">${all.length}</div><div class="stat-card__label">Total Drop-Ins</div></div>
-      <div class="stat-card"><div class="stat-card__val">${confirmed}</div><div class="stat-card__label">Confirmed</div></div>
-      <div class="stat-card"><div class="stat-card__val">${pending}</div><div class="stat-card__label">Pending Payment</div></div>`;
- 
-    document.getElementById('dropin-tbody').innerHTML = all.length === 0
-      ? '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--mid)">No drop-in bookings yet.</td></tr>'
-      : all.map(d => `
-          <tr>
-            <td>${d.name}</td>
-            <td style="color:var(--mid)">${d.email}</td>
-            <td>${d.classes ? d.classes.name : '—'}</td>
-            <td style="color:var(--mid)">${d.class_date}</td>
-            <td><span class="badge ${d.status==='confirmed'?'badge-green':d.status==='pending'?'badge-grey':'badge-red'}">${d.status}</span></td>
-            <td style="font-size:.75rem;color:var(--mid)">${d.payment_reference || '—'}</td>
-          </tr>`).join('');
-  }
- 
-  function openSupabaseLogs() {
-    // Build the URL dynamically from the configured Supabase URL so no project ID is hardcoded
-    const projectRef = SUPABASE_URL.replace('https://','').replace('.supabase.co','');
-    window.open('https://supabase.com/dashboard/project/' + projectRef + '/logs/auth-logs', '_blank');
-  }
- 
+
   // Close modal on overlay click
   document.getElementById('class-modal').addEventListener('click', function(e) {
     if (e.target === this) closeClassModal();
