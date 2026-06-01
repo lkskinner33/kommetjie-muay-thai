@@ -110,6 +110,9 @@ function renderNav(profile, session) {
   const nav = document.getElementById('nav-user');
   if (!nav) return;
   if (profile || session) {
+    // Hide the logo on mobile to make room for the Log out button
+    const logo = document.querySelector('.nav__logo');
+    if (logo && window.innerWidth <= 600) logo.style.display = 'none';
     nav.innerHTML = `<button class="btn btn-outline btn-sm" onclick="logout()">Log out</button>`;
   } else {
     nav.innerHTML = `
