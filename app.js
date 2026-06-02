@@ -111,13 +111,14 @@ function renderNav(profile, session) {
   if (!nav) return;
   if (profile || session) {
     nav.innerHTML = `
-      <a href="index.html" class="nav__logo"><img src="logo.png" alt="KMT" height="36" onerror="this.style.display='none'"/></a>
+      <a href="index.html" class="nav__logo"><img src="logo.png" alt="KMT" height="36"/></a>
       <button class="btn btn-outline btn-sm" onclick="logout()">Log out</button>`;
   } else {
     nav.innerHTML = `
-      <a href="login.html"    class="nav-link">Log in</a>
+      <a href="login.html" class="nav-link">Log in</a>
       <a href="register.html" class="btn btn-primary btn-sm">Join</a>`;
   }
+}
 }
  
 // ── PWA Install Prompt ────────────────────────────────────
