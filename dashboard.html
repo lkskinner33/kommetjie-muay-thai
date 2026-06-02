@@ -38,7 +38,10 @@
 
 <nav class="nav">
   <div class="nav__inner">
-
+    <a class="nav__logo" href="index.html">
+      <img src="logo.png" alt="KMT" height="36" onerror="this.style.display='none'"/>
+      <span>KMT</span>
+    </a>
     <div class="nav-spacer"></div>
     <div id="nav-user"></div>
   </div>
@@ -91,10 +94,9 @@
 
     renderNav(currentProfile);
 
-    const firstName = currentProfile.full_name.split(' ')[0];
-    const hour      = new Date().getHours();
-    const greet     = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-    document.getElementById('greeting').textContent   = `${greet}, ${firstName} 👊`;
+    const hour  = new Date().getHours();
+    const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+    document.getElementById('greeting').textContent = `${greet} 👊`;
     document.getElementById('subtext').textContent    = 'Book your classes for the week below.';
 
     // Load classes & bookings
