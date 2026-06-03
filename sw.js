@@ -1,5 +1,5 @@
 // sw.js — KMT Service Worker v7
-const CACHE = 'kmt-v7';
+const CACHE = 'kmt-v8';
 
 // Auth-related pages must NEVER be cached — always serve fresh
 const NEVER_CACHE = [
