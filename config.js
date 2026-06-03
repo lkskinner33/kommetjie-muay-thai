@@ -13,3 +13,4 @@
 const SUPABASE_URL        = '';
 const SUPABASE_KEY        = '';
 const PAYSTACK_PUBLIC_KEY = '';
+const PAYSTACK_PLAN_CODE = '';
