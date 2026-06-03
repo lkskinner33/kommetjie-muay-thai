@@ -32,10 +32,16 @@
     .class-card__count  { font-size:.75rem; color:var(--mid); margin-top:8px; }
     .booked-label       { font-size:.75rem; font-weight:700; letter-spacing:.8px; color:var(--lime); margin-bottom:10px; text-transform:uppercase; }
     .locked-msg         { font-size:.75rem; color:var(--mid); margin-top:8px; }
+    .membership-banner  { border-radius:var(--radius); padding:16px 20px; margin-bottom:28px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .membership-banner--active   { background:rgba(196,241,53,.08); border:1px solid var(--lime); }
+    .membership-banner--expired  { background:rgba(229,57,53,.08);  border:1px solid var(--red); }
+    .membership-banner--none     { background:rgba(255,255,255,.04); border:1px solid var(--border); }
+    .membership-banner__label    { font-size:.75rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:2px; }
+    .membership-banner__sub      { font-size:.82rem; color:var(--mid); }
   </style>
 </head>
 <body>
-
+ 
 <nav class="nav">
   <div class="nav__inner">
     <a class="nav__logo" href="index.html">
@@ -46,37 +52,41 @@
     <div id="nav-user"></div>
   </div>
 </nav>
-
+ 
 <div class="page">
   <div class="container">
-
+ 
     <div id="loading-screen" class="loading-screen">
       <div class="spinner"></div><span>Loading your classes…</span>
     </div>
-
+ 
     <div id="main" style="display:none">
-
+ 
+      <!-- Membership banner -->
+      <div id="membership-banner" class="membership-banner membership-banner--none" style="display:none"></div>
+ 
       <div class="flex-between mb-32">
         <div>
           <h1 id="greeting"></h1>
           <p id="subtext" style="margin-top:4px"></p>
         </div>
       </div>
-
+ 
       <!-- Week navigation -->
       <div class="week-nav">
         <button class="btn btn-outline btn-sm" id="btn-prev" onclick="changeWeek(-1)">← Prev</button>
         <h2 id="week-label" class="text-center"></h2>
         <button class="btn btn-outline btn-sm" id="btn-next" onclick="changeWeek(1)">Next →</button>
       </div>
-
+ 
       <div id="week-grid" class="week-grid"></div>
-
+ 
     </div>
   </div>
 </div>
-
+ 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://js.paystack.co/v1/inline.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 <script>
@@ -84,44 +94,46 @@
   let allClasses     = [];
   let allBookings    = [];
   let weekOffset     = 0;
-
+ 
   (async () => {
     const session = await requireAuth();
     if (!session) return;
-
+ 
     currentProfile = await getProfile(session.user.id);
     if (!currentProfile) { window.location.href = 'register.html'; return; }
-
-    renderNav(currentProfile);
-
+ 
+    renderNav(currentProfile, session);
+ 
     const hour  = new Date().getHours();
     const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
     document.getElementById('greeting').textContent = `${greet} 👊`;
-    document.getElementById('subtext').textContent    = 'Book your classes for the week below.';
-
+    document.getElementById('subtext').textContent  = 'Book your classes for the week below.';
+ 
+    renderMembershipBanner(currentProfile);
+ 
     // Load classes & bookings
     const [{ data: classes }, { data: bookings }] = await Promise.all([
       db.from('classes').select('*').eq('active', true).order('day_of_week').order('start_time'),
       db.from('bookings').select('*').eq('user_id', currentProfile.id).eq('status','confirmed')
     ]);
-
+ 
     allClasses  = classes  || [];
     allBookings = bookings || [];
-
+ 
     document.getElementById('loading-screen').style.display = 'none';
     document.getElementById('main').style.display           = 'block';
-
+ 
     renderWeek();
   })();
-
+ 
   // ── Week rendering ────────────────────────────────────────
-
+ 
   function changeWeek(delta) {
     weekOffset += delta;
     if (weekOffset < 0) weekOffset = 0; // can't go to past weeks
     renderWeek();
   }
-
+ 
   function renderWeek() {
     const now     = new Date();
     const monday  = new Date(now);
@@ -129,23 +141,23 @@
     monday.setHours(0,0,0,0);
     const sunday  = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-
+ 
     const fmtDate = d => d.toLocaleDateString('en-ZA',{day:'numeric',month:'short'});
     document.getElementById('week-label').textContent =
       weekOffset === 0 ? 'This Week' :
       weekOffset === 1 ? 'Next Week' :
       `${fmtDate(monday)} – ${fmtDate(sunday)}`;
-
+ 
     document.getElementById('btn-prev').disabled = weekOffset <= 0;
-
+ 
     // Build cards for each class this week
     const order  = [1,2,3,4,5,6,0];
     let html     = '';
-
+ 
     order.forEach(dow => {
       const weekClasses = allClasses.filter(c => c.day_of_week === dow);
       if (!weekClasses.length) return;
-
+ 
       weekClasses.forEach(cls => {
         const classDate = dateForDow(dow, weekOffset);
         const classDateObj = new Date(classDate + 'T' + cls.start_time);
@@ -154,16 +166,16 @@
         const isBooked = !!booking;
         const cancellable = isBooked && canCancel(classDate, cls.start_time);
         const bookable = !isBooked && !isPast;
-
+ 
         // Booking count for this class+date
         const countKey = `${cls.id}_${classDate}`;
-
+ 
         let cardClass = 'class-card';
         if (isBooked) cardClass += ' class-card--booked';
         if (isPast)   cardClass += ' class-card--past';
-
+ 
         const dateLabel = new Date(classDate + 'T12:00:00').toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
-
+ 
         let actionHtml = '';
         if (isPast) {
           actionHtml = `<div class="locked-msg">Session passed</div>`;
@@ -176,9 +188,14 @@
             actionHtml += `<div class="locked-msg">🔒 ${cutoffMsg}</div>`;
           }
         } else {
-          actionHtml = `<button class="btn btn-primary btn-sm btn-full" onclick="bookClass('${cls.id}','${classDate}','${cls.start_time}')">Book</button>`;
+          const isMember = currentProfile.membership_status === 'active';
+          if (isMember) {
+            actionHtml = `<button class="btn btn-primary btn-sm btn-full" onclick="bookClass('${cls.id}','${classDate}','${cls.start_time}')">Book</button>`;
+          } else {
+            actionHtml = `<button class="btn btn-outline btn-sm btn-full" onclick="payDropIn('${cls.id}','${classDate}','${cls.name}')">Pay & Book (R${DROPIN_PRICE})</button>`;
+          }
         }
-
+ 
         html += `
           <div class="${cardClass}" id="card-${cls.id}-${classDate}">
             <div class="class-card__day">${DAYS[dow]}</div>
@@ -190,94 +207,192 @@
           </div>`;
       });
     });
-
+ 
     document.getElementById('week-grid').innerHTML = html || '<p class="text-mid">No classes scheduled this week.</p>';
-
+ 
     // Load booking counts
     loadCounts();
   }
-
+ 
   async function loadCounts() {
     // Get all confirmed bookings for classes in the visible week
     const order = [1,2,3,4,5,6,0];
     const dates  = order.map(d => dateForDow(d, weekOffset));
-
+ 
     const { data } = await db.from('bookings')
       .select('class_id, class_date')
       .eq('status','confirmed')
       .in('class_date', dates);
-
+ 
     if (!data) return;
     const counts = {};
     data.forEach(b => {
       const key = `${b.class_id}_${b.class_date}`;
       counts[key] = (counts[key] || 0) + 1;
     });
-
+ 
     Object.entries(counts).forEach(([key, cnt]) => {
       const el = document.getElementById(`count-${key}`);
       if (el) el.textContent = `${cnt} ${cnt === 1 ? 'person' : 'people'} booked`;
     });
   }
-
+ 
   // ── Book ──────────────────────────────────────────────────
-
+ 
   async function bookClass(classId, classDate, startTime) {
     const classDateObj = new Date(classDate + 'T' + startTime);
     if (classDateObj < new Date()) return showToast('This session has already passed.','error');
-
+ 
     const btn = document.querySelector(`#card-${classId}-${classDate} .btn-primary`);
     if (btn) btn.disabled = true;
-
+ 
     const { error } = await db.from('bookings').upsert({
       user_id:    currentProfile.id,
       class_id:   classId,
       class_date: classDate,
       status:     'confirmed'
     }, { onConflict: 'user_id,class_id,class_date' });
-
+ 
     if (error) {
       showToast('Booking failed. Please try again.','error');
       if (btn) btn.disabled = false;
       return;
     }
-
+ 
     // Update local state
     allBookings.push({ id: 'temp', class_id: classId, class_date: classDate, status: 'confirmed' });
     // Refresh from DB to get real ID
     const { data: fresh } = await db.from('bookings').select('*')
       .eq('user_id', currentProfile.id).eq('status','confirmed');
     if (fresh) allBookings = fresh;
-
+ 
     showToast('Booked! See you there 🥊','success');
     renderWeek();
   }
-
+ 
   // ── Cancel ────────────────────────────────────────────────
-
+ 
   async function cancelBooking(bookingId, classId, classDate, startTime) {
     if (!canCancel(classDate, startTime)) {
       showToast('Cancellation window has closed.','error');
       return;
     }
-
+ 
     const btn = document.querySelector(`#card-${classId}-${classDate} .btn-outline`);
     if (btn) btn.disabled = true;
-
+ 
     const { error } = await db.from('bookings').update({
       status: 'cancelled',
       cancelled_at: new Date().toISOString()
     }).eq('id', bookingId);
-
+ 
     if (error) {
       showToast('Cancellation failed. Please try again.','error');
       if (btn) btn.disabled = false;
       return;
     }
-
+ 
     allBookings = allBookings.filter(b => b.id !== bookingId);
     showToast('Booking cancelled.','info');
     renderWeek();
+  }
+ 
+  // ── Membership ────────────────────────────────────────────
+ 
+  const DROPIN_PRICE    = 150;   // ZAR — drop-in price per class
+  const MONTHLY_PRICE   = 250;   // ZAR
+ 
+  function renderMembershipBanner(profile) {
+    const el = document.getElementById('membership-banner');
+    if (!el) return;
+ 
+    const status  = profile.membership_status || 'none';
+    const expires = profile.membership_expires;
+ 
+    el.style.display = 'flex';
+ 
+    if (status === 'active') {
+      el.className = 'membership-banner membership-banner--active';
+      el.innerHTML = `
+        <div>
+          <div class="membership-banner__label" style="color:var(--lime)">✓ Active Member</div>
+          <div class="membership-banner__sub">Monthly membership${expires ? ' · Renews ' + new Date(expires).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : ''}</div>
+        </div>`;
+    } else if (status === 'cancelled' || status === 'expired') {
+      el.className = 'membership-banner membership-banner--expired';
+      el.innerHTML = `
+        <div>
+          <div class="membership-banner__label" style="color:var(--red)">Membership ${status}</div>
+          <div class="membership-banner__sub">Renew your membership or pay per class below.</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="payMonthly()">Renew — R${MONTHLY_PRICE}/mo</button>`;
+    } else {
+      el.className = 'membership-banner membership-banner--none';
+      el.innerHTML = `
+        <div>
+          <div class="membership-banner__label">No Active Membership</div>
+          <div class="membership-banner__sub">Join monthly or pay per class (drop-in R${DROPIN_PRICE}).</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="payMonthly()">Join — R${MONTHLY_PRICE}/mo</button>`;
+    }
+  }
+ 
+  function payMonthly() {
+    const handler = PaystackPop.setup({
+      key:       PAYSTACK_PUBLIC_KEY,
+      email:     currentProfile.email,
+      amount:    MONTHLY_PRICE * 100,
+      currency:  'ZAR',
+      plan:      PAYSTACK_PLAN_CODE,
+      metadata:  { payment_type: 'monthly', user_id: currentProfile.id },
+      callback:  async (res) => { await confirmPayment(res.reference); },
+      onClose:   () => {}
+    });
+    handler.openIframe();
+  }
+ 
+  function payDropIn(classId, classDate, className) {
+    const handler = PaystackPop.setup({
+      key:      PAYSTACK_PUBLIC_KEY,
+      email:    currentProfile.email,
+      amount:   DROPIN_PRICE * 100,
+      currency: 'ZAR',
+      metadata: { payment_type: 'dropin', user_id: currentProfile.id, class_id: classId, class_date: classDate },
+      callback: async (res) => { await confirmPayment(res.reference, classId, classDate); },
+      onClose:  () => {}
+    });
+    handler.openIframe();
+  }
+ 
+  async function confirmPayment(reference, classId, classDate) {
+    showToast('Confirming payment…', 'info');
+    try {
+      const res  = await fetch('/.netlify/functions/verify-payment', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ reference })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        // Refresh profile
+        const { data: fresh } = await db.from('profiles').select('*').eq('id', currentProfile.id).single();
+        if (fresh) currentProfile = fresh;
+        renderMembershipBanner(currentProfile);
+ 
+        if (data.payment_type === 'dropin' && classId && classDate) {
+          const { data: freshBookings } = await db.from('bookings').select('*').eq('user_id', currentProfile.id).eq('status','confirmed');
+          if (freshBookings) allBookings = freshBookings;
+          showToast('Payment confirmed — you're booked! 🥊', 'success');
+        } else {
+          showToast('Membership activated! 🥊', 'success');
+        }
+        renderWeek();
+      } else {
+        showToast('Payment could not be confirmed. Contact admin.', 'error');
+      }
+    } catch (err) {
+      showToast('Network error confirming payment.', 'error');
+    }
   }
 </script>
 <script>
