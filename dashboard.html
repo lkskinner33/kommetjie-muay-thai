@@ -123,14 +123,17 @@
     document.getElementById('loading-screen').style.display = 'none';
     document.getElementById('main').style.display           = 'block';
 
-    renderWeek();
+    if (allClasses.length === 0) {
+      document.getElementById('week-grid').innerHTML = '<p class="text-mid">No classes have been scheduled yet. Check back soon.</p>';
+    } else {
+      renderWeek();
+    }
   })();
 
   // ── Week rendering ────────────────────────────────────────
 
   function changeWeek(delta) {
     weekOffset += delta;
-    if (weekOffset < 0) weekOffset = 0; // can't go to past weeks
     renderWeek();
   }
 
@@ -148,7 +151,7 @@
       weekOffset === 1 ? 'Next Week' :
       `${fmtDate(monday)} – ${fmtDate(sunday)}`;
 
-    document.getElementById('btn-prev').disabled = weekOffset <= 0;
+    document.getElementById('btn-prev').disabled = false;
 
     // Build cards for each class this week
     const order  = [1,2,3,4,5,6,0];
@@ -187,8 +190,8 @@
             const cutoffMsg = parseInt(cls.start_time) < 12 ? 'Cancellations locked after 10 PM' : 'Cancellations locked after 9 AM';
             actionHtml += `<div class="locked-msg">🔒 ${cutoffMsg}</div>`;
           }
-        } else {
-          const isMember = currentProfile.membership_status === 'active';
+        } else if (!isPast) {
+          const isMember = (currentProfile.membership_status || 'none') === 'active';
           if (isMember) {
             actionHtml = `<button class="btn btn-primary btn-sm btn-full" onclick="bookClass('${cls.id}','${classDate}','${cls.start_time}')">Book</button>`;
           } else {
@@ -291,3 +294,118 @@
       if (btn) btn.disabled = false;
       return;
     }
+
+    allBookings = allBookings.filter(b => b.id !== bookingId);
+    showToast('Booking cancelled.','info');
+    renderWeek();
+  }
+
+  // ── Membership ────────────────────────────────────────────
+
+  const DROPIN_PRICE    = 150;   // ZAR — drop-in price per class
+  const MONTHLY_PRICE   = 250;   // ZAR
+
+  function renderMembershipBanner(profile) {
+    const el = document.getElementById('membership-banner');
+    if (!el) return;
+
+    const status  = profile.membership_status || 'none';
+    const expires = profile.membership_expires;
+
+    el.style.display = 'flex';
+
+    if (status === 'active') {
+      el.className = 'membership-banner membership-banner--active';
+      el.innerHTML = `
+        <div>
+          <div class="membership-banner__label" style="color:var(--lime)">✓ Active Member</div>
+          <div class="membership-banner__sub">Monthly membership${expires ? ' · Renews ' + new Date(expires).toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'}) : ''}</div>
+        </div>`;
+    } else if (status === 'cancelled' || status === 'expired') {
+      el.className = 'membership-banner membership-banner--expired';
+      el.innerHTML = `
+        <div>
+          <div class="membership-banner__label" style="color:var(--red)">Membership ${status}</div>
+          <div class="membership-banner__sub">Renew your membership or pay per class below.</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="payMonthly()">Renew — R${MONTHLY_PRICE}/mo</button>`;
+    } else {
+      el.className = 'membership-banner membership-banner--none';
+      el.innerHTML = `
+        <div>
+          <div class="membership-banner__label">No Active Membership</div>
+          <div class="membership-banner__sub">Join monthly or pay per class (drop-in R${DROPIN_PRICE}).</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="payMonthly()">Join — R${MONTHLY_PRICE}/mo</button>`;
+    }
+  }
+
+  function payMonthly() {
+    const handler = PaystackPop.setup({
+      key:       PAYSTACK_PUBLIC_KEY,
+      email:     currentProfile.email,
+      amount:    MONTHLY_PRICE * 100,
+      currency:  'ZAR',
+      plan:      PAYSTACK_PLAN_CODE,
+      metadata:  { payment_type: 'monthly', user_id: currentProfile.id },
+      callback:  async (res) => { await confirmPayment(res.reference); },
+      onClose:   () => {}
+    });
+    handler.openIframe();
+  }
+
+  function payDropIn(classId, classDate, className) {
+    const handler = PaystackPop.setup({
+      key:      PAYSTACK_PUBLIC_KEY,
+      email:    currentProfile.email,
+      amount:   DROPIN_PRICE * 100,
+      currency: 'ZAR',
+      metadata: { payment_type: 'dropin', user_id: currentProfile.id, class_id: classId, class_date: classDate },
+      callback: async (res) => { await confirmPayment(res.reference, classId, classDate); },
+      onClose:  () => {}
+    });
+    handler.openIframe();
+  }
+
+  async function confirmPayment(reference, classId, classDate) {
+    showToast('Confirming payment…', 'info');
+    try {
+      const res  = await fetch('/.netlify/functions/verify-payment', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ reference })
+      });
+      const data = await res.json();
+      if (data.ok) {
+        // Refresh profile
+        const { data: fresh } = await db.from('profiles').select('*').eq('id', currentProfile.id).single();
+        if (fresh) currentProfile = fresh;
+        renderMembershipBanner(currentProfile);
+
+        if (data.payment_type === 'dropin' && classId && classDate) {
+          const { data: freshBookings } = await db.from('bookings').select('*').eq('user_id', currentProfile.id).eq('status','confirmed');
+          if (freshBookings) allBookings = freshBookings;
+          showToast('Payment confirmed — you're booked! 🥊', 'success');
+        } else {
+          showToast('Membership activated! 🥊', 'success');
+        }
+        renderWeek();
+      } else {
+        showToast('Payment could not be confirmed. Contact admin.', 'error');
+      }
+    } catch (err) {
+      showToast('Network error confirming payment.', 'error');
+    }
+  }
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js")
+        .then(r => console.log("SW registered:", r.scope))
+        .catch(e => console.warn("SW failed:", e));
+    });
+  }
+</script>
+</body>
+</html>
