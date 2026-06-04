@@ -204,10 +204,11 @@
 <script src="config.js"></script>
 <script src="app2.js"></script>
 <script>
+  let profile = null;
+ 
   (async () => {
     // Nav
     const session = await getSession();
-    let profile = null;
     if (session) profile = await getProfile(session.user.id);
     renderNav(profile, session);
  
