@@ -313,7 +313,13 @@
       indemnity_version: '1.0'
     });
 
-    window.location.href = 'dashboard.html';
+    // Redirect based on membership status
+    const memberStatus = existingProfile?.membership_status || 'none';
+    if (memberStatus === 'active') {
+      window.location.href = 'dashboard.html';
+    } else {
+      window.location.href = 'index.html';
+    }
   }
 
   async function resendOTP(e) {
