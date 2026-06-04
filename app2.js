@@ -111,7 +111,6 @@ function renderNav(profile, session) {
   if (!nav) return;
   if (profile || session) {
     nav.innerHTML = `
-      <a href="index.html" class="nav__logo"><img src="logo.png" alt="KMT" height="36"/></a>
       <button class="btn btn-outline btn-sm" onclick="logout()">Log out</button>`;
   } else {
     nav.innerHTML = `
