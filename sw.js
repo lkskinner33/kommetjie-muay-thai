@@ -1,5 +1,5 @@
-// sw.js — KMT Service Worker v7
-const CACHE = 'kmt-v8';
+// sw.js — KMT Service Worker v4
+const CACHE = 'kmt-v4';
 
 // Auth-related pages must NEVER be cached — always serve fresh
 const NEVER_CACHE = [
@@ -12,8 +12,6 @@ const SHELL = [
   '/index.html',
   '/dashboard.html',
   '/admin.html',
-  '/membership.html',
-  '/dropin.html',
   '/style.css',
   '/app.js',
   '/config.js',
@@ -66,8 +64,10 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(event.request)
         .then(res => {
-          const clone = res.clone();
-          caches.open(CACHE).then(c => c.put(event.request, clone));
+          if (res && res.status === 200) {
+            const clone = res.clone();
+            caches.open(CACHE).then(c => c.put(event.request, clone));
+          }
           return res;
         })
         .catch(() =>
