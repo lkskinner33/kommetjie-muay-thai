@@ -38,6 +38,15 @@
     .membership-banner--none     { background:rgba(255,255,255,.04); border:1px solid var(--border); }
     .membership-banner__label    { font-size:.75rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; margin-bottom:2px; }
     .membership-banner__sub      { font-size:.82rem; color:var(--mid); }
+    .section-tabs { display:flex; border-bottom:1px solid var(--border); margin-bottom:32px; gap:0; }
+    .section-tab  { padding:12px 20px; background:none; border:none; border-bottom:2px solid transparent;
+                    color:var(--mid); font-family:var(--font-body); font-size:.9rem; font-weight:600;
+                    cursor:pointer; white-space:nowrap; transition:all .2s; }
+    .section-tab.active { color:var(--lime); border-bottom-color:var(--lime); }
+    .section-panel { display:none; }
+    .section-panel.active { display:block; }
+    .register-table td { font-size:.85rem; }
+    .register-date { font-size:.75rem; color:var(--mid); }
   </style>
 </head>
 <body>
@@ -49,6 +58,7 @@
       <span>KMT</span>
     </a>
     <div class="nav-spacer"></div>
+    <a href="dashboard.html" class="nav-link">Classes</a>
     <div id="nav-user"></div>
   </div>
 </nav>
@@ -72,14 +82,32 @@
         </div>
       </div>
  
-      <!-- Week navigation -->
-      <div class="week-nav">
-        <button class="btn btn-outline btn-sm" id="btn-prev" onclick="changeWeek(-1)">← Prev</button>
-        <h2 id="week-label" class="text-center"></h2>
-        <button class="btn btn-outline btn-sm" id="btn-next" onclick="changeWeek(1)">Next →</button>
+      <!-- Section tabs -->
+      <div class="section-tabs">
+        <button class="section-tab active" onclick="switchSection('schedule')">Schedule</button>
+        <button class="section-tab"        onclick="switchSection('register')">Attendance</button>
       </div>
  
-      <div id="week-grid" class="week-grid"></div>
+      <!-- SCHEDULE PANEL -->
+      <div class="section-panel active" id="panel-schedule">
+        <div class="week-nav">
+          <button class="btn btn-outline btn-sm" id="btn-prev" onclick="changeWeek(-1)">← Prev</button>
+          <h2 id="week-label" class="text-center"></h2>
+          <button class="btn btn-outline btn-sm" id="btn-next" onclick="changeWeek(1)">Next →</button>
+        </div>
+        <div id="week-grid" class="week-grid"></div>
+      </div>
+ 
+      <!-- ATTENDANCE PANEL -->
+      <div class="section-panel" id="panel-register">
+        <div class="flex-between mb-24">
+          <h3>My Attendance</h3>
+          <span id="attendance-count" class="badge badge-lime"></span>
+        </div>
+        <div id="attendance-content">
+          <div class="loading-screen" style="min-height:200px"><div class="spinner"></div></div>
+        </div>
+      </div>
  
     </div>
   </div>
@@ -348,8 +376,8 @@
       currency:  'ZAR',
       plan:      PAYSTACK_PLAN_CODE,
       metadata:  { payment_type: 'monthly', user_id: currentProfile.id },
-      callback:  async (res) => { await confirmPayment(res.reference); },
-      onClose:   () => {}
+      callback:  function(res) { confirmPayment(res.reference); },
+      onClose:   function() {}
     });
     handler.openIframe();
   }
@@ -361,10 +389,51 @@
       amount:   DROPIN_PRICE * 100,
       currency: 'ZAR',
       metadata: { payment_type: 'dropin', user_id: currentProfile.id, class_id: classId, class_date: classDate },
-      callback: async (res) => { await confirmPayment(res.reference, classId, classDate); },
-      onClose:  () => {}
+      callback: function(res) { confirmPayment(res.reference, classId, classDate); },
+      onClose:  function() {}
     });
     handler.openIframe();
+  }
+ 
+  // ── Section switching ────────────────────────────────────
+ 
+  function switchSection(name) {
+    document.querySelectorAll('.section-tab').forEach((b, i) => {
+      b.classList.toggle('active', ['schedule','register'][i] === name);
+    });
+    document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    if (name === 'register') loadAttendance();
+  }
+ 
+  async function loadAttendance() {
+    const el = document.getElementById('attendance-content');
+    el.innerHTML = '<div class="loading-screen" style="min-height:200px"><div class="spinner"></div></div>';
+ 
+    const { data } = await db.from('bookings')
+      .select('*, classes(name, start_time, end_time)')
+      .eq('user_id', currentProfile.id)
+      .eq('status', 'confirmed')
+      .order('class_date', { ascending: false });
+ 
+    const count = document.getElementById('attendance-count');
+ 
+    if (!data || data.length === 0) {
+      count.textContent = '0 classes';
+      el.innerHTML = '<div class="empty-state"><div class="emoji">📋</div>No classes attended yet.</div>';
+      return;
+    }
+ 
+    count.textContent = data.length + ' ' + (data.length === 1 ? 'class' : 'classes');
+ 
+    el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Class</th><th>Time</th></tr></thead><tbody>' +
+      data.map(b => {
+        const d    = new Date(b.class_date + 'T12:00:00');
+        const date = d.toLocaleDateString('en-ZA', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+        return '<tr><td class="register-date">' + date + '</td><td>' + (b.classes?.name || '—') + '</td><td style="color:var(--lime)">' +
+          (b.classes ? formatTime(b.classes.start_time) + ' – ' + formatTime(b.classes.end_time) : '—') + '</td></tr>';
+      }).join('') +
+      '</tbody></table></div>';
   }
  
   async function confirmPayment(reference, classId, classDate) {
