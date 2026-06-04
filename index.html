@@ -215,13 +215,15 @@
     // Update hero CTA based on login state and membership
     const heroCta = document.getElementById('hero-cta');
     if (heroCta && profile) {
-      if (profile.membership_status === 'active') {
+      const isActive = profile.membership_status === 'active';
+      if (isActive) {
         heroCta.innerHTML = `
           <a href="dashboard.html" class="btn btn-primary btn-lg">My Classes</a>
           <a href="#schedule" class="btn btn-outline btn-lg">View Schedule</a>`;
       } else {
         heroCta.innerHTML = `
           <button class="btn btn-primary btn-lg" onclick="payMonthly()">Join Now — R250/mo</button>
+          <a href="dashboard.html" class="btn btn-outline btn-lg">My Classes</a>
           <a href="#schedule" class="btn btn-outline btn-lg">View Schedule</a>`;
       }
     }
