@@ -266,35 +266,36 @@
 </script>
 <script>
   // ── Payment ──────────────────────────────────────────────
+  function confirmMonthlyPayment(reference) {
+    showToast('Confirming payment…', 'info');
+    fetch('/.netlify/functions/verify-payment', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ reference: reference })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        showToast('Membership activated! Welcome 🥊', 'success');
+        setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+      } else {
+        showToast('Payment could not be confirmed. Contact admin.', 'error');
+      }
+    })
+    .catch(() => showToast('Network error. Please contact admin.', 'error'));
+  }
+ 
   function payMonthly() {
     if (!profile) { window.location.href = 'register.html'; return; }
     const handler = PaystackPop.setup({
       key:      PAYSTACK_PUBLIC_KEY,
       email:    profile.email,
-      amount:   25000, // R250 in kobo
+      amount:   25000,
       currency: 'ZAR',
       plan:     PAYSTACK_PLAN_CODE,
       metadata: { payment_type: 'monthly', user_id: profile.id },
-      callback: async (res) => {
-        showToast('Confirming payment…', 'info');
-        try {
-          const r    = await fetch('/.netlify/functions/verify-payment', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ reference: res.reference })
-          });
-          const data = await r.json();
-          if (data.ok) {
-            showToast('Membership activated! Welcome 🥊', 'success');
-            setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
-          } else {
-            showToast('Payment could not be confirmed. Contact admin.', 'error');
-          }
-        } catch (err) {
-          showToast('Network error. Please contact admin.', 'error');
-        }
-      },
-      onClose: () => {}
+      callback: function(res) { confirmMonthlyPayment(res.reference); },
+      onClose:  function() {}
     });
     handler.openIframe();
   }
