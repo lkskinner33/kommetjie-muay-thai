@@ -1,335 +1,244 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Join – Kommetjie Muay Thai</title>
-  <link rel="stylesheet" href="style.css"/>
-  <link rel="icon" href="logo.png"/>
-  <link rel="manifest" href="manifest.json"/>
-  <meta name="theme-color" content="#c4f135"/>
-  <meta name="mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title" content="KMT"/>
-  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"/>
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon.ico"/>
-</head>
-<body>
-
-<nav class="nav">
-  <div class="nav__inner">
-    <a class="nav__logo" href="index.html">
-      <img src="logo.png" alt="KMT" height="36" onerror="this.style.display='none'"/>
-      <span>KMT</span>
-    </a>
-    <div class="nav-spacer"></div>
-    <div id="nav-user"></div>
-  </div>
-</nav>
-
-<div class="page">
-  <div class="container--narrow">
-
-    <div class="page-title">
-      <h1>Join <span class="text-lime">Kommetjie Muay Thai</span></h1>
-      <p>Create your account. Takes about 2 minutes.</p>
-    </div>
-
-    <!-- Step indicator -->
-    <div class="steps" id="steps">
-      <div class="step step--active" id="step-ind-1">1. Details</div>
-      <div class="step" id="step-ind-2">2. Emergency</div>
-      <div class="step" id="step-ind-3">3. Indemnity</div>
-      <div class="step" id="step-ind-4">4. Verify</div>
-    </div>
-
-    <!-- STEP 1: Personal details -->
-    <div id="step-1">
-      <div class="card">
-        <h3 class="mb-24">Your Details</h3>
-        <div id="err-1" class="form-error"></div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>First Name</label>
-            <input type="text" id="first_name" placeholder="Jane" autocomplete="given-name"/>
-          </div>
-          <div class="form-group">
-            <label>Last Name</label>
-            <input type="text" id="last_name" placeholder="Smith" autocomplete="family-name"/>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Email Address</label>
-          <input type="email" id="email" placeholder="you@example.com" autocomplete="email"/>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Phone Number</label>
-            <input type="tel" id="phone" placeholder="071 000 0000" autocomplete="tel"/>
-          </div>
-          <div class="form-group">
-            <label>Date of Birth</label>
-            <input type="date" id="dob"/>
-          </div>
-        </div>
-        <button class="btn btn-primary btn-full mt-8" id="btn-step1" onclick="goStep2()">Continue →</button>
-        <p class="text-center mt-16" style="font-size:.85rem">
-          Already a member? <a href="login.html">Log in</a>
-        </p>
-      </div>
-    </div>
-
-    <!-- STEP 2: Emergency contact -->
-    <div id="step-2" style="display:none">
-      <div class="card">
-        <h3 class="mb-8">Emergency Contact</h3>
-        <p class="mb-24" style="font-size:.9rem">Required for your safety. This person will be contacted in case of emergency during training.</p>
-        <div id="err-2" class="form-error"></div>
-        <div class="form-group">
-          <label>Emergency Contact Name</label>
-          <input type="text" id="ec_name" placeholder="Full name" autocomplete="off"/>
-        </div>
-        <div class="form-group">
-          <label>Emergency Contact Phone</label>
-          <input type="tel" id="ec_phone" placeholder="071 000 0000" autocomplete="off"/>
-        </div>
-        <div class="flex gap-16 mt-8">
-          <button class="btn btn-outline" onclick="setStep(1)">← Back</button>
-          <button class="btn btn-primary" style="flex:1" onclick="goStep3()">Continue →</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 3: Indemnity -->
-    <div id="step-3" style="display:none">
-      <div class="card">
-        <h3 class="mb-8">Indemnity Agreement</h3>
-        <p class="mb-16" style="font-size:.9rem">Please read the full agreement below before signing.</p>
-        <div id="err-3" class="form-error"></div>
-
-        <div class="indemnity-scroll" id="indemnity-text">
-          <h4>INDEMNITY AND PARTICIPATION AGREEMENT</h4>
-          <p><strong>Kommetjie Muay Thai</strong><br>
-          Operated by: Luke Kevin Skinner<br>
-          Physical Address: Generation Schools Imhoff, 62 Kommetjie Road, Slangkop Intersection, Kommetjie, 7975<br>
-          Version 1.0</p>
-
-          <h4>1. VOLUNTARY PARTICIPATION</h4>
-          <p>I, the undersigned, confirm that I am voluntarily choosing to participate in Muay Thai training and related activities offered by Kommetjie Muay Thai ("the Gym"). I acknowledge that this participation is entirely at my own initiative and choice.</p>
-
-          <h4>2. ASSUMPTION OF RISK</h4>
-          <p>I fully understand and acknowledge that Muay Thai training is a contact sport involving physical exertion, striking, and grappling, and that participation carries inherent risks of injury. These risks include but are not limited to: sprains, strains, fractures, bruising, cuts, concussion, and in rare and extreme cases, serious injury or death. I voluntarily and knowingly accept all such risks.</p>
-
-          <h4>3. INDEMNIFICATION AND WAIVER</h4>
-          <p>In consideration of being permitted to participate in training sessions and activities at Kommetjie Muay Thai, I hereby irrevocably release, indemnify, and hold harmless Luke Kevin Skinner, Kommetjie Muay Thai, its coaches, instructors, employees, volunteers, and agents (collectively "the Released Parties") from and against any and all claims, damages, losses, liabilities, costs, or expenses — including legal costs on an attorney-and-client basis — arising from or in connection with my participation in any training session, activity, or event at the Gym, including but not limited to claims arising from negligence of the Released Parties.</p>
-
-          <h4>4. MEDICAL FITNESS DECLARATION</h4>
-          <p>I hereby declare that I am in good physical health and that I am not aware of any medical condition, injury, or other physical limitation that would prevent me from safely participating in Muay Thai training. I agree to immediately inform the instructor or coach of any change in my health status that may affect my ability to train safely. I acknowledge that the Released Parties are not responsible for any undisclosed medical conditions.</p>
-
-          <h4>5. EMERGENCY MEDICAL CONSENT</h4>
-          <p>In the event that I am incapacitated and unable to make decisions, I hereby consent to receive emergency medical treatment as deemed necessary by qualified medical personnel. I understand and accept that I am solely responsible for all associated medical costs, including but not limited to ambulance services, hospital fees, and any follow-up treatment.</p>
-
-          <h4>6. PHOTOGRAPHY, VIDEO AND MEDIA CONSENT</h4>
-          <p>I consent to photographs, video recordings, and other media being captured of me during training sessions and Gym-related events. I grant Kommetjie Muay Thai the right to use such media for promotional, marketing, or educational purposes, including social media, without further compensation to me. I may withdraw this consent in writing at any time.</p>
-
-          <h4>7. CODE OF CONDUCT</h4>
-          <p>I agree to conduct myself in a respectful and sportsmanlike manner at all times. I agree to follow the reasonable instructions of coaches and instructors, to avoid behaviour that endangers myself or others, and to treat all fellow members, coaches, and staff with respect. The Gym reserves the right to suspend or terminate my membership in the event of a breach of this code of conduct.</p>
-
-          <h4>8. PERSONAL EQUIPMENT</h4>
-          <p>I understand and accept that I am responsible for bringing appropriate personal protective equipment to each session, including but not limited to: boxing gloves, hand wraps, shin pads, gumshield, and groin guard where applicable. The Gym accepts no liability for injury resulting from failure to use appropriate protective equipment.</p>
-
-          <h4>9. GOVERNING LAW</h4>
-          <p>This Agreement is governed exclusively by the laws of the Republic of South Africa. Any dispute arising out of or in connection with this Agreement shall be subject to the exclusive jurisdiction of the South African courts.</p>
-
-          <h4>10. SEVERABILITY</h4>
-          <p>If any provision of this Agreement is found to be invalid or unenforceable by a court of competent jurisdiction, the remaining provisions shall continue in full force and effect.</p>
-
-          <h4>ACKNOWLEDGEMENT</h4>
-          <p>By electronically agreeing below, I confirm that: (a) I have read and fully understood this Agreement; (b) I agree to be legally bound by its terms; (c) I am 18 years of age or older, or have obtained the written consent of my parent or legal guardian; and (d) I enter into this Agreement freely and without duress. I acknowledge that this electronic agreement constitutes a legally binding signature.</p>
-        </div>
-
-        <label class="checkbox-wrap mb-24">
-          <input type="checkbox" id="indemnity_check"/>
-          <span class="checkbox-label">I have read and fully understand the Indemnity and Participation Agreement above. I agree to be legally bound by its terms and confirm that the information I have provided is accurate and complete.</span>
-        </label>
-
-        <div class="flex gap-16">
-          <button class="btn btn-outline" onclick="setStep(2)">← Back</button>
-          <button class="btn btn-primary" style="flex:1" id="btn-step3" onclick="goStep4()">Create Account →</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 4: OTP Verify -->
-    <div id="step-4" style="display:none">
-      <div class="card text-center">
-        <div style="font-size:48px;margin-bottom:16px">📬</div>
-        <h3 class="mb-8">Check your email</h3>
-        <p class="mb-24">We sent a 6-digit code to <strong id="otp-email-display"></strong>.<br>Enter it below to activate your account.</p>
-        <div id="err-4" class="form-error" style="text-align:left"></div>
-        <div class="form-group">
-          <input type="text" id="otp_code" placeholder="000000" maxlength="6"
-            style="text-align:center;font-size:1.8rem;letter-spacing:8px;font-family:var(--font-head)"
-            autocomplete="one-time-code"/>
-        </div>
-        <button class="btn btn-primary btn-full" id="btn-verify" onclick="verifyOTP()">Verify & Enter →</button>
-        <p class="mt-16" style="font-size:.85rem">
-          Didn't receive it? <a href="#" onclick="resendOTP(event)">Resend code</a>
-        </p>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
-<script src="app2.js"></script>
-<script>
-  // Redirect if already logged in
-  (async () => {
-    const session = await getSession();
-    if (session) {
-      const profile = await getProfile(session.user.id);
-      if (profile) window.location.href = 'dashboard.html';
-    }
-    renderNav(null);
-  })();
-
-  // ── Step management ──
-  function setStep(n) {
-    [1,2,3,4].forEach(i => {
-      document.getElementById(`step-${i}`).style.display = i === n ? 'block' : 'none';
-      const ind = document.getElementById(`step-ind-${i}`);
-      ind.className = 'step' + (i === n ? ' step--active' : i < n ? ' step--done' : '');
-    });
+// app.js — shared utilities (include after config.js)
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession:    true,
+    storageKey:        'kmt-auth',
+    storage:           window.localStorage,
+    autoRefreshToken:  true,
+    detectSessionInUrl: false
   }
+});
 
-  // ── Validation helpers ──
-  function val(id) { return document.getElementById(id).value.trim(); }
-  function showErr(step, msg) {
-    const el = document.getElementById(`err-${step}`);
-    el.textContent = msg; el.style.display = 'block';
-  }
-  function clearErr(step) {
-    document.getElementById(`err-${step}`).style.display = 'none';
-  }
+// ── Auth ──────────────────────────────────────────────────────
 
-  function goStep2() {
-    clearErr(1);
-    if (!val('first_name')) return showErr(1,'Please enter your first name.');
-    if (!val('last_name'))  return showErr(1,'Please enter your last name.');
-    if (!val('email') || !val('email').includes('@')) return showErr(1,'Please enter a valid email address.');
-    if (!val('dob'))   return showErr(1,'Please enter your date of birth.');
-    // Age check ≥ 16
-    const age = (Date.now() - new Date(val('dob'))) / (1000*60*60*24*365.25);
-    if (age < 16) return showErr(1,'You must be at least 16 years old to join.');
-    setStep(2);
-  }
+async function getSession() {
+  const { data: { session } } = await db.auth.getSession();
+  return session;
+}
 
-  function goStep3() {
-    clearErr(2);
-    if (!val('ec_name'))  return showErr(2,'Please enter your emergency contact\'s name.');
-    if (!val('ec_phone')) return showErr(2,'Please enter your emergency contact\'s phone number.');
-    setStep(3);
-  }
+async function getProfile(userId) {
+  const { data } = await db.from('profiles').select('*').eq('id', userId).single();
+  return data;
+}
 
-  async function goStep4() {
-    clearErr(3);
-    if (!document.getElementById('indemnity_check').checked)
-      return showErr(3,'You must read and agree to the Indemnity Agreement to continue.');
+async function requireAuth(redirect = 'login.html') {
+  const session = await getSession();
+  if (!session) { window.location.href = redirect; return null; }
+  return session;
+}
 
-    const btn = document.getElementById('btn-step3');
-    setBtn(btn, true);
-
-    const email = val('email');
-    const { error } = await db.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: null   // suppress magic-link fallback; force OTP only
-      }
-    });
-
-    setBtn(btn, false);
-
-    if (error) return showErr(3, error.message || 'Failed to send verification code. Please try again.');
-
-    document.getElementById('otp-email-display').textContent = email;
-    setStep(4);
-  }
-
-  async function verifyOTP() {
-    clearErr(4);
-    const code = document.getElementById('otp_code').value.trim();
-    if (code.length !== 6) return showErr(4,'Please enter the 6-digit code.');
-
-    const btn = document.getElementById('btn-verify');
-    setBtn(btn, true);
-
-    const { data, error } = await db.auth.verifyOtp({
-      email: val('email'),
-      token: code,
-      type: 'signup'
-    });
-
-    if (error) {
-      setBtn(btn, false);
-      return showErr(4, 'Invalid or expired code. Please check and try again.');
-    }
-
-    // Save profile
-    const userId = data.user.id;
-    const fullName = `${val('first_name')} ${val('last_name')}`;
-
-    // Check if a profile already exists — preserve the existing role if so
-    const { data: existingProfile } = await db.from('profiles')
-      .select('role').eq('id', userId).single();
-
-    const { error: profileErr } = await db.from('profiles').upsert({
-      id:                     userId,
-      email:                  val('email'),
-      full_name:              fullName,
-      phone:                  val('phone'),
-      date_of_birth:          val('dob'),
-      emergency_contact_name: val('ec_name'),
-      emergency_contact_phone:val('ec_phone'),
-      role: existingProfile?.role || 'member'  // never downgrade an existing role
-    });
-
-    if (profileErr) {
-      setBtn(btn, false);
-      return showErr(4,'Account verified but profile save failed. Please contact the admin.');
-    }
-
-    // Save indemnity audit
-    await db.from('indemnity_audit').insert({
-      user_id:           userId,
-      email:             val('email'),
-      full_name:         fullName,
-      user_agent:        navigator.userAgent,
-      indemnity_version: '1.0'
-    });
-
+async function requireAdmin() {
+  const session = await requireAuth();
+  if (!session) return null;
+  const profile = await getProfile(session.user.id);
+  if (!profile || profile.role !== 'admin') {
     window.location.href = 'dashboard.html';
+    return null;
   }
+  return { session, profile };
+}
 
-  async function resendOTP(e) {
-    e.preventDefault();
-    await db.auth.signInWithOtp({ email: val('email'), options: { shouldCreateUser: true } });
-    showToast('Code resent — check your inbox.', 'success');
+async function logout() {
+  await db.auth.signOut();
+  window.location.href = 'index.html';
+}
+
+// ── Date / schedule helpers ───────────────────────────────────
+
+const DAYS       = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function formatTime(t) {
+  const [h, m] = t.split(':');
+  const hr = parseInt(h);
+  return `${hr > 12 ? hr - 12 : hr || 12}:${m} ${hr < 12 ? 'AM' : 'PM'}`;
+}
+
+function toDateString(d) { return d.toISOString().split('T')[0]; }
+
+// Returns the date (YYYY-MM-DD) for a given day-of-week in the current week
+// weekOffset 0 = this week, 1 = next week
+function dateForDow(dow, weekOffset = 0) {
+  const now  = new Date();
+  const diff = (dow - now.getDay() + 7) % 7;
+  const d    = new Date(now);
+  d.setDate(now.getDate() + diff + weekOffset * 7);
+  d.setHours(0, 0, 0, 0);
+  return toDateString(d);
+}
+
+// Can the user still cancel this booking?
+function canCancel(classDate, startTime) {
+  const now  = new Date();
+  const hour = parseInt(startTime.split(':')[0]);
+  let cutoff;
+  if (hour < 12) {
+    // Morning → cutoff 22:00 the night before
+    cutoff = new Date(classDate + 'T22:00:00');
+    cutoff.setDate(cutoff.getDate() - 1);
+  } else {
+    // Afternoon → cutoff 09:00 same day
+    cutoff = new Date(classDate + 'T09:00:00');
   }
-</script>
-<script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/sw.js")
-        .then(r => console.log("SW registered:", r.scope))
-        .catch(e => console.warn("SW failed:", e));
+  return now < cutoff;
+}
+
+// ── UI helpers ────────────────────────────────────────────────
+
+function showToast(msg, type = 'info') {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div');
+  t.className = `toast toast--${type}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('toast--show'));
+  setTimeout(() => {
+    t.classList.remove('toast--show');
+    setTimeout(() => t.remove(), 300);
+  }, 3500);
+}
+
+function setBtn(btn, loading) {
+  if (!btn) return;
+  btn.disabled = loading;
+  if (loading) { btn.dataset.orig = btn.textContent; btn.textContent = 'Please wait…'; }
+  else btn.textContent = btn.dataset.orig || btn.textContent;
+}
+
+function renderNav(profile, session) {
+  const nav = document.getElementById('nav-user');
+  if (!nav) return;
+  if (profile || session) {
+    nav.innerHTML = `
+      <a href="index.html" class="nav__logo"><img src="logo.png" alt="KMT" height="36"/></a>
+      <button class="btn btn-outline btn-sm" onclick="logout()">Log out</button>`;
+  } else {
+    nav.innerHTML = `
+      <a href="login.html" class="nav-link">Log in</a>
+      <a href="register.html" class="btn btn-primary btn-sm">Join</a>`;
+  }
+}
+
+// ── PWA Install Prompt ────────────────────────────────────
+
+(function () {
+  // Don't show if already running as installed PWA
+  if (window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true) return;
+
+  // Don't show if user dismissed within the last 7 days
+  const dismissed = localStorage.getItem('kmt-pwa-dismissed');
+  if (dismissed && (Date.now() - parseInt(dismissed)) < 7 * 24 * 60 * 60 * 1000) return;
+
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) &&
+                !/crios/i.test(navigator.userAgent); // exclude Chrome on iOS
+  const isAndroid = /android/i.test(navigator.userAgent);
+
+  // Only show on mobile
+  if (!isIOS && !isAndroid) return;
+
+  let deferredPrompt = null;
+
+  // Capture the Android install prompt event
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Show our custom sheet after a short delay
+    setTimeout(showSheet, 2500);
+  });
+
+  function buildSheet() {
+    // Remove any existing sheet
+    document.getElementById('pwa-backdrop')?.remove();
+
+    const backdrop = document.createElement('div');
+    backdrop.id = 'pwa-backdrop';
+    backdrop.className = 'pwa-backdrop';
+    backdrop.addEventListener('click', dismissSheet);
+
+    const sheet = document.createElement('div');
+    sheet.className = 'pwa-sheet';
+    sheet.addEventListener('click', e => e.stopPropagation());
+
+    if (isIOS) {
+      sheet.innerHTML = `
+        <div class="pwa-sheet__handle"></div>
+        <div class="pwa-sheet__top">
+          <div class="pwa-sheet__icon"><img src="icons/icon-192.png" alt="KMT"/></div>
+          <div class="pwa-sheet__info">
+            <div class="pwa-sheet__title">Install KMT App</div>
+            <div class="pwa-sheet__sub">kommetjiemuaythai.co.za</div>
+          </div>
+        </div>
+        <p class="pwa-sheet__desc">Add this app to your home screen for quick access to your classes.</p>
+        <div class="ios-steps">
+          <div class="ios-step"><span class="step-icon">1️⃣</span> Tap the <strong>&nbsp;Share&nbsp;</strong> button at the bottom of Safari</div>
+          <div class="ios-step"><span class="step-icon">2️⃣</span> Scroll down and tap <strong>&nbsp;Add to Home Screen</strong></div>
+          <div class="ios-step"><span class="step-icon">3️⃣</span> Tap <strong>&nbsp;Add</strong> in the top right corner</div>
+        </div>
+        <div class="pwa-sheet__actions">
+          <button class="btn btn-outline btn-full" id="pwa-dismiss">Maybe later</button>
+        </div>`;
+    } else {
+      sheet.innerHTML = `
+        <div class="pwa-sheet__handle"></div>
+        <div class="pwa-sheet__top">
+          <div class="pwa-sheet__icon"><img src="icons/icon-192.png" alt="KMT"/></div>
+          <div class="pwa-sheet__info">
+            <div class="pwa-sheet__title">Install KMT App</div>
+            <div class="pwa-sheet__sub">kommetjiemuaythai.co.za</div>
+          </div>
+        </div>
+        <p class="pwa-sheet__desc">Install the app for quick access to your classes — no App Store needed.</p>
+        <div class="pwa-sheet__actions">
+          <button class="btn btn-primary btn-full" id="pwa-install">📲 Add to Home Screen</button>
+          <button class="btn btn-outline btn-full" id="pwa-dismiss">Maybe later</button>
+        </div>`;
+    }
+
+    backdrop.appendChild(sheet);
+    document.body.appendChild(backdrop);
+
+    // Wire up buttons
+    document.getElementById('pwa-dismiss')?.addEventListener('click', dismissSheet);
+    document.getElementById('pwa-install')?.addEventListener('click', installApp);
+
+    // Animate in
+    requestAnimationFrame(() => {
+      backdrop.classList.add('show');
+      requestAnimationFrame(() => sheet.classList.add('show'));
     });
   }
-</script>
-</body>
-</html>
+
+  function showSheet() {
+    buildSheet();
+  }
+
+  function dismissSheet() {
+    const backdrop = document.getElementById('pwa-backdrop');
+    const sheet    = backdrop?.querySelector('.pwa-sheet');
+    if (sheet)    sheet.classList.remove('show');
+    if (backdrop) {
+      backdrop.classList.remove('show');
+      setTimeout(() => backdrop.remove(), 350);
+    }
+    localStorage.setItem('kmt-pwa-dismissed', Date.now().toString());
+  }
+
+  async function installApp() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    dismissSheet();
+    if (outcome === 'accepted') {
+      localStorage.setItem('kmt-pwa-dismissed', Date.now().toString());
+    }
+  }
+
+  // iOS: show after delay since there's no beforeinstallprompt event
+  if (isIOS) {
+    setTimeout(showSheet, 2500);
+  }
+})();
