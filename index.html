@@ -115,7 +115,7 @@
   </style>
 </head>
 <body>
- 
+
 <nav class="nav">
   <div class="nav__inner">
     <a class="nav__logo" href="index.html">
@@ -126,7 +126,7 @@
     <div id="nav-user"></div>
   </div>
 </nav>
- 
+
 <section class="hero">
   <div class="hero__content">
     <div class="hero__tag">Kommetjie · Est. 2024</div>
@@ -141,7 +141,7 @@
     <img src="logo.png" alt="Kommetjie Muay Thai"/>
   </div>
 </section>
- 
+
 <div class="info-bar">
   <div class="info-bar__inner">
     <div class="info-item">
@@ -170,7 +170,7 @@
     </div>
   </div>
 </div>
- 
+
 <section class="carousel-section" id="gallery">
   <div class="container">
     <div class="carousel" id="carousel">
@@ -181,7 +181,7 @@
     <div class="carousel__dots" id="carousel-dots"></div>
   </div>
 </section>
- 
+
 <section class="section" id="schedule">
   <div class="container">
     <div class="section-label">Weekly Schedule</div>
@@ -191,13 +191,13 @@
     </div>
   </div>
 </section>
- 
+
 <footer class="footer">
   <strong>Kommetjie Muay Thai</strong><br>
   Generation Schools Imhoff · 62 Kommetjie Road, Kommetjie, 7975<br><br>
   <small>Operated by Luke Kevin Skinner &nbsp;·&nbsp; Fight Ready. Mind Steady.</small>
 </footer>
- 
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
@@ -208,7 +208,7 @@
     let profile = null;
     if (session) profile = await getProfile(session.user.id);
     renderNav(profile, session);
- 
+
     // Update hero CTA based on login state
     const heroCta = document.getElementById('hero-cta');
     if (heroCta && profile) {
@@ -216,24 +216,24 @@
         <a href="dashboard.html" class="btn btn-primary btn-lg">My Classes</a>
         <a href="#schedule"      class="btn btn-outline btn-lg">View Schedule</a>`;
     }
- 
+
     // Schedule
     const { data: classes } = await db.from('classes')
       .select('*').eq('active', true).order('day_of_week').order('start_time');
- 
+
     const wrap = document.getElementById('schedule-wrap');
     if (!classes || classes.length === 0) {
       wrap.innerHTML = '<p class="text-mid">No classes scheduled yet.</p>';
       return;
     }
- 
+
     // Group by day
     const byDay = {};
     classes.forEach(c => {
       if (!byDay[c.day_of_week]) byDay[c.day_of_week] = [];
       byDay[c.day_of_week].push(c);
     });
- 
+
     const order = [1,2,3,4,5,6,0];
     let html = '';
     order.forEach(dow => {
@@ -251,7 +251,7 @@
       });
       html += `</div></div>`;
     });
- 
+
     wrap.innerHTML = html;
   })();
 </script>
@@ -277,27 +277,27 @@
     { src: 'gallery/3.jpg',  alt: 'Weigh-in staredown' },
     { src: 'gallery/2.jpg',  alt: 'Post-fight — battle worn' },
   ];
- 
+
   (function() {
     let current = 0;
     let timer;
     const track  = document.getElementById('carousel-track');
     const dotsEl = document.getElementById('carousel-dots');
     if (!track) return;
- 
+
     track.innerHTML = GALLERY_IMAGES.map(img =>
       `<div class="carousel__slide"><img src="${img.src}" alt="${img.alt}" loading="lazy"/></div>`
     ).join('');
- 
+
     const total = GALLERY_IMAGES.length;
- 
+
     GALLERY_IMAGES.forEach((_, i) => {
       const d = document.createElement('button');
       d.className = 'carousel__dot' + (i === 0 ? ' active' : '');
       d.onclick = () => goTo(i);
       dotsEl.appendChild(d);
     });
- 
+
     function goTo(n) {
       current = (n + total) % total;
       track.style.transform = `translateX(-${current * 100}%)`;
@@ -305,24 +305,24 @@
         d.classList.toggle('active', i === current));
       resetTimer();
     }
- 
+
     function resetTimer() {
       clearInterval(timer);
       timer = setInterval(() => goTo(current + 1), 5000);
     }
- 
+
     window.carouselMove = delta => goTo(current + delta);
- 
+
     document.getElementById('carousel').addEventListener('mouseenter', () => clearInterval(timer));
     document.getElementById('carousel').addEventListener('mouseleave', resetTimer);
- 
+
     let touchStartX = 0;
     track.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
     track.addEventListener('touchend', e => {
       const diff = touchStartX - e.changedTouches[0].clientX;
       if (Math.abs(diff) > 50) goTo(current + (diff > 0 ? 1 : -1));
     });
- 
+
     resetTimer();
   })();
 </script>
