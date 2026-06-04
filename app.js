@@ -119,7 +119,6 @@ function renderNav(profile, session) {
       <a href="register.html" class="btn btn-primary btn-sm">Join</a>`;
   }
 }
-}
 
 // ── PWA Install Prompt ────────────────────────────────────
 
