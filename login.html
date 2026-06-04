@@ -158,18 +158,23 @@
       return;
     }
 
-    // Check if this user has a profile — if not, send to register
+    // Check profile and membership status
     const { data: { session } } = await db.auth.getSession();
     if (session) {
       const { data: profile } = await db.from('profiles')
-        .select('id').eq('id', session.user.id).single();
+        .select('id, membership_status').eq('id', session.user.id).single();
       if (!profile) {
         window.location.href = 'register.html';
         return;
       }
+      if (profile.membership_status === 'active') {
+        window.location.href = 'dashboard.html';
+      } else {
+        window.location.href = 'index.html';
+      }
+      return;
     }
-
-    window.location.href = 'dashboard.html';
+    window.location.href = 'index.html';
   }
 
   async function resendOTP(e) {
