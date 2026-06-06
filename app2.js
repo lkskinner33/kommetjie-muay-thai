@@ -120,18 +120,60 @@ function setBtn(btn, loading) {
 function renderNav(profile, session) {
   const nav = document.getElementById('nav-user');
   if (!nav) return;
+ 
+  // Remove any existing mobile menu
+  document.getElementById('nav-mobile-menu')?.remove();
+  document.getElementById('nav-hamburger')?.remove();
+ 
   if (profile || session) {
+    const adminLink = profile?.role === 'admin' ? '<a href="admin.html" class="nav-link">Admin</a>' : '';
+ 
+    // Desktop nav
     nav.innerHTML = `
-      <a href="index.html"    class="nav-link">Home</a>
+      <a href="index.html"     class="nav-link">Home</a>
       <a href="dashboard.html" class="nav-link">My Classes</a>
-      ${profile?.role === 'admin' ? '<a href="admin.html" class="nav-link">Admin</a>' : ''}
+      ${adminLink}
       <button class="btn btn-outline btn-sm" onclick="logout()">Log out</button>`;
+ 
+    // Hamburger button
+    const hamburger = document.createElement('button');
+    hamburger.className = 'nav-hamburger';
+    hamburger.id = 'nav-hamburger';
+    hamburger.innerHTML = '<span></span><span></span><span></span>';
+    hamburger.onclick = toggleMobileMenu;
+    nav.parentElement.appendChild(hamburger);
+ 
+    // Mobile dropdown menu
+    const mobileMenu = document.createElement('div');
+    mobileMenu.className = 'nav-mobile-menu';
+    mobileMenu.id = 'nav-mobile-menu';
+    mobileMenu.innerHTML = `
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">My Classes</a>
+      ${profile?.role === 'admin' ? '<a href="admin.html">Admin</a>' : ''}
+      <button onclick="logout()">Log out</button>`;
+    document.body.appendChild(mobileMenu);
+ 
   } else {
     nav.innerHTML = `
       <a href="login.html"    class="nav-link">Log in</a>
       <a href="register.html" class="btn btn-primary btn-sm">Join</a>`;
   }
 }
+ 
+function toggleMobileMenu() {
+  const menu = document.getElementById('nav-mobile-menu');
+  if (menu) menu.classList.toggle('open');
+}
+ 
+// Close mobile menu when clicking outside
+document.addEventListener('click', function(e) {
+  const menu = document.getElementById('nav-mobile-menu');
+  const hamburger = document.getElementById('nav-hamburger');
+  if (menu && hamburger && !menu.contains(e.target) && !hamburger.contains(e.target)) {
+    menu.classList.remove('open');
+  }
+});
  
 // ── PWA Install Prompt ────────────────────────────────────
  
@@ -255,4 +297,3 @@ function renderNav(profile, session) {
     setTimeout(showSheet, 2500);
   }
 })();
- 
