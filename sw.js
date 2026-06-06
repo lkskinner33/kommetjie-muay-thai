@@ -1,11 +1,14 @@
 // sw.js — KMT Service Worker v4
-const CACHE = 'kmt-v9';
+const CACHE = 'kmt-v10';
 
 // Auth-related pages must NEVER be cached — always serve fresh
 const NEVER_CACHE = [
   '/login.html',
   '/register.html',
-  '/dashboard.html'
+  '/dashboard.html',
+  '/app2.js',
+  '/app.js',
+  '/config.js'
 ];
 
 // Static assets safe to cache
