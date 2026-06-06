@@ -313,10 +313,13 @@
       indemnity_version: '1.0'
     });
  
-    // Redirect based on membership status
+    // Redirect based on membership status and dropin flag
+    const isDropin     = new URLSearchParams(window.location.search).get('dropin') === 'true';
     const memberStatus = existingProfile?.membership_status || 'none';
     if (memberStatus === 'active') {
       window.location.href = 'dashboard.html';
+    } else if (isDropin) {
+      window.location.href = 'dropin.html';
     } else {
       window.location.href = 'index.html';
     }
