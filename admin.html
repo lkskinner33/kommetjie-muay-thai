@@ -33,7 +33,7 @@
   </style>
 </head>
 <body>
-
+ 
 <nav class="nav">
   <div class="nav__inner">
     <a class="nav__logo" href="index.html">
@@ -44,32 +44,32 @@
     <div id="nav-user"></div>
   </div>
 </nav>
-
+ 
 <div class="page">
   <div class="container">
-
+ 
     <div id="loading-screen" class="loading-screen">
       <div class="spinner"></div><span>Loading admin panel…</span>
     </div>
-
+ 
     <div id="main" style="display:none">
-
+ 
       <div class="page-title">
         <div style="font-size:.72rem;font-weight:700;letter-spacing:2px;color:var(--lime);text-transform:uppercase;margin-bottom:8px">Admin Panel</div>
         <h1>Kommetjie Muay Thai</h1>
       </div>
-
+ 
       <!-- Stats row -->
       <div class="stat-grid" id="stats-grid"></div>
-
+ 
       <!-- Tabs -->
       <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('schedule')">Schedule</button>
-        <button class="tab-btn"        onclick="switchTab('bookings')">Today's Bookings</button>
+        <button class="tab-btn"        onclick="switchTab('bookings')">Upcoming Bookings</button>
         <button class="tab-btn"        onclick="switchTab('members')">Members</button>
         <button class="tab-btn"        onclick="switchTab('admins')">Admins</button>
       </div>
-
+ 
       <!-- SCHEDULE TAB -->
       <div class="tab-panel active" id="tab-schedule">
         <div class="flex-between mb-24">
@@ -85,13 +85,13 @@
           </table>
         </div>
       </div>
-
+ 
       <!-- BOOKINGS TAB -->
       <div class="tab-panel" id="tab-bookings">
-        <h3 class="mb-24">Today's Bookings — <span id="today-label"></span></h3>
+        <h3 class="mb-24">Upcoming Bookings</h3>
         <div id="bookings-content"></div>
       </div>
-
+ 
       <!-- MEMBERS TAB -->
       <div class="tab-panel" id="tab-members">
         <div class="flex-between mb-24">
@@ -103,13 +103,13 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Name</th><th>Email</th><th>Phone</th><th>Joined</th><th>Status</th><th></th></tr>
+              <tr><th>Name</th><th>Email</th><th>Phone</th><th>Joined</th><th>Account</th><th>Membership</th><th></th></tr>
             </thead>
             <tbody id="members-tbody"></tbody>
           </table>
         </div>
       </div>
-
+ 
       <!-- ADMINS TAB -->
       <div class="tab-panel" id="tab-admins">
         <div class="flex-between mb-24">
@@ -132,11 +132,11 @@
           <button class="btn btn-primary" onclick="grantAdmin()">Grant Admin Access</button>
         </div>
       </div>
-
+ 
     </div><!-- /main -->
   </div>
 </div>
-
+ 
 <!-- Add/Edit Class Modal -->
 <div class="modal-overlay" id="class-modal">
   <div class="modal">
@@ -178,7 +178,7 @@
     </div>
   </div>
 </div>
-
+ 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="app2.js"></script>
@@ -186,23 +186,23 @@
   let adminProfile = null;
   let allMembers   = [];
   let editingClassId = null;
-
+ 
   (async () => {
     const result = await requireAdmin();
     if (!result) return;
     adminProfile = result.profile;
     renderNav(adminProfile);
-
+ 
     await Promise.all([loadStats(), loadSchedule(), loadBookings(), loadMembers()]);
-
+ 
     document.getElementById('loading-screen').style.display = 'none';
     document.getElementById('main').style.display = 'block';
     document.getElementById('today-label').textContent =
       new Date().toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   })();
-
+ 
   // ── Tabs ──────────────────────────────────────────────────
-
+ 
   function switchTab(name) {
     document.querySelectorAll('.tab-btn').forEach((b,i) => {
       const names = ['schedule','bookings','members','admins'];
@@ -212,9 +212,9 @@
     document.getElementById(`tab-${name}`).classList.add('active');
     if (name === 'admins') loadAdmins();
   }
-
+ 
   // ── Stats ─────────────────────────────────────────────────
-
+ 
   async function loadStats() {
     const today = new Date().toISOString().split('T')[0];
     const [{ count: members }, { count: todayBookings }, { count: totalBookings }] = await Promise.all([
@@ -222,15 +222,15 @@
       db.from('bookings').select('*', { count:'exact', head:true }).eq('class_date', today).eq('status','confirmed'),
       db.from('bookings').select('*', { count:'exact', head:true }).eq('status','confirmed')
     ]);
-
+ 
     document.getElementById('stats-grid').innerHTML = `
       <div class="stat-card"><div class="stat-card__val">${members||0}</div><div class="stat-card__label">Members</div></div>
       <div class="stat-card"><div class="stat-card__val">${todayBookings||0}</div><div class="stat-card__label">Booked Today</div></div>
       <div class="stat-card"><div class="stat-card__val">${totalBookings||0}</div><div class="stat-card__label">Total Bookings</div></div>`;
   }
-
+ 
   // ── Schedule ──────────────────────────────────────────────
-
+ 
   async function loadSchedule() {
     const { data } = await db.from('classes').select('*').order('day_of_week').order('start_time');
     const tbody = document.getElementById('schedule-tbody');
@@ -247,7 +247,7 @@
         </td>
       </tr>`).join('') || '<tr><td colspan="6" class="text-mid" style="text-align:center;padding:32px">No classes yet.</td></tr>';
   }
-
+ 
   // Class modal
   function openClassModal(cls = null) {
     editingClassId = cls ? cls.id : null;
@@ -260,17 +260,17 @@
     document.getElementById('err-modal').style.display = 'none';
     document.getElementById('class-modal').classList.add('open');
   }
-
+ 
   function editClass(cls) { openClassModal(cls); }
   function closeClassModal() {
     document.getElementById('class-modal').classList.remove('open');
     editingClassId = null;
   }
-
+ 
   async function saveClass() {
     const err = document.getElementById('err-modal');
     err.style.display = 'none';
-
+ 
     const payload = {
       name:        document.getElementById('cls-name').value.trim() || 'Muay Thai',
       day_of_week: parseInt(document.getElementById('cls-dow').value),
@@ -279,94 +279,122 @@
       capacity:    parseInt(document.getElementById('cls-cap').value) || 20,
       active:      true
     };
-
+ 
     if (!payload.start_time || !payload.end_time) {
       err.textContent = 'Please set start and end times.';
       err.style.display = 'block';
       return;
     }
-
+ 
     const btn = document.getElementById('btn-save-cls');
     setBtn(btn, true);
-
+ 
     let error;
     if (editingClassId) {
       ({ error } = await db.from('classes').update(payload).eq('id', editingClassId));
     } else {
       ({ error } = await db.from('classes').insert(payload));
     }
-
+ 
     setBtn(btn, false);
-
+ 
     if (error) {
       err.textContent = 'Save failed: ' + error.message;
       err.style.display = 'block';
       return;
     }
-
+ 
     closeClassModal();
     showToast(editingClassId ? 'Class updated.' : 'Class added.', 'success');
     loadSchedule();
     loadStats();
   }
-
+ 
   async function toggleClass(id, active) {
     await db.from('classes').update({ active: !active }).eq('id', id);
     showToast(!active ? 'Class activated.' : 'Class deactivated.', 'success');
     loadSchedule();
   }
-
+ 
   // ── Today's Bookings ──────────────────────────────────────
-
+ 
   async function loadBookings() {
     const today = new Date().toISOString().split('T')[0];
-
+ 
     const { data } = await db.from('bookings')
       .select('*, profiles(full_name, email), classes(name, start_time, end_time)')
-      .eq('class_date', today)
+      .gte('class_date', today)
       .eq('status', 'confirmed')
+      .order('class_date')
       .order('class_id');
-
+ 
     const el = document.getElementById('bookings-content');
-
+ 
     if (!data || data.length === 0) {
-      el.innerHTML = '<div class="empty-state"><div class="emoji">🤷</div>No bookings for today yet.</div>';
+      el.innerHTML = '<div class="empty-state"><div class="emoji">🤷</div>No upcoming bookings.</div>';
       return;
     }
-
-    // Group by class
-    const grouped = {};
+ 
+    // Group by date then by class
+    const byDate = {};
     data.forEach(b => {
-      const key = `${b.class_id}`;
-      if (!grouped[key]) grouped[key] = { cls: b.classes, members: [] };
-      grouped[key].members.push(b.profiles);
+      const date = b.class_date;
+      if (!byDate[date]) byDate[date] = {};
+      const key = b.class_id;
+      if (!byDate[date][key]) byDate[date][key] = { cls: b.classes, members: [] };
+      byDate[date][key].members.push(b.profiles);
     });
-
-    el.innerHTML = Object.values(grouped).map(g => `
-      <div class="card mb-16">
-        <div class="flex-between mb-16">
-          <div>
-            <div style="font-family:var(--font-head);font-size:1.1rem">${g.cls.name}</div>
-            <div style="color:var(--lime);font-size:.9rem">${formatTime(g.cls.start_time)} – ${formatTime(g.cls.end_time)}</div>
+ 
+    el.innerHTML = Object.entries(byDate).map(([date, classes]) => {
+      const dateLabel = new Date(date + 'T12:00:00').toLocaleDateString('en-ZA', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+      });
+      const isToday = date === today;
+      return `
+        <div class="mb-32">
+          <div style="font-size:.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:${isToday ? 'var(--lime)' : 'var(--mid)'};margin-bottom:12px">
+            ${isToday ? '⚡ Today — ' : ''}${dateLabel}
           </div>
-          <span class="badge badge-lime">${g.members.length} booked</span>
-        </div>
-        <div>
-          ${g.members.map(m => `
-            <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:.9rem">${m.full_name} <span style="color:var(--mid)">${m.email}</span></div>
-          `).join('')}
-        </div>
-      </div>`).join('');
+          ${Object.values(classes).map(g => `
+            <div class="card mb-16">
+              <div class="flex-between mb-16">
+                <div>
+                  <div style="font-family:var(--font-head);font-size:1.1rem">${g.cls.name}</div>
+                  <div style="color:var(--lime);font-size:.9rem">${formatTime(g.cls.start_time)} – ${formatTime(g.cls.end_time)}</div>
+                </div>
+                <span class="badge badge-lime">${g.members.length} booked</span>
+              </div>
+              <div>
+                ${g.members.map(m => `
+                  <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:.9rem">${m.full_name} <span style="color:var(--mid)">${m.email}</span></div>
+                `).join('')}
+              </div>
+            </div>`).join('')}
+        </div>`;
+    }).join('');
   }
-
+ 
   // ── Members ───────────────────────────────────────────────
-
+ 
   async function loadMembers() {
     const { data } = await db.from('profiles').select('*').eq('role','member').order('full_name');
     allMembers = data || [];
     renderMembers(allMembers);
   }
-
+ 
+  function membershipBadge(m) {
+    const status = m.membership_status || 'none';
+    if (status === 'active') {
+      const expires = m.membership_expires
+        ? ' · ' + new Date(m.membership_expires).toLocaleDateString('en-ZA', {day:'numeric',month:'short',year:'numeric'})
+        : '';
+      return `<span class="badge badge-lime">Monthly${expires}</span>`;
+    }
+    if (status === 'cancelled') return `<span class="badge badge-red">Cancelled</span>`;
+    if (status === 'expired')   return `<span class="badge badge-red">Expired</span>`;
+    return `<span class="badge badge-grey">Registered Only</span>`;
+  }
+ 
   function renderMembers(members) {
     document.getElementById('members-tbody').innerHTML = members.map(m => `
       <tr>
@@ -375,28 +403,29 @@
         <td style="color:var(--mid)">${m.phone || '–'}</td>
         <td style="color:var(--mid)">${new Date(m.created_at).toLocaleDateString('en-ZA')}</td>
         <td><span class="badge ${m.active ? 'badge-green' : 'badge-red'}">${m.active ? 'Active' : 'Inactive'}</span></td>
+        <td>${membershipBadge(m)}</td>
         <td>
           <button class="btn btn-ghost btn-sm" onclick="toggleMember('${m.id}',${m.active})">
             ${m.active ? 'Deactivate' : 'Activate'}
           </button>
         </td>
-      </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--mid)">No members yet.</td></tr>';
+      </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--mid)">No members yet.</td></tr>';
   }
-
+ 
   function filterMembers() {
     const q = document.getElementById('member-search').value.toLowerCase();
     renderMembers(allMembers.filter(m =>
       m.full_name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)));
   }
-
+ 
   async function toggleMember(id, active) {
     await db.from('profiles').update({ active: !active }).eq('id', id);
     showToast(!active ? 'Member activated.' : 'Member deactivated.', 'success');
     loadMembers();
   }
-
+ 
   // ── Admins ────────────────────────────────────────────────
-
+ 
   async function loadAdmins() {
     const { data } = await db.from('profiles').select('*').eq('role','admin').order('full_name');
     document.getElementById('admins-tbody').innerHTML = (data||[]).map(a => `
@@ -409,46 +438,31 @@
         </td>
       </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--mid)">No admins found.</td></tr>';
   }
-
+ 
   async function grantAdmin() {
     const err = document.getElementById('err-admin');
     err.style.display = 'none';
     const email = document.getElementById('admin-email').value.trim().toLowerCase();
     if (!email) { err.textContent = 'Enter an email address.'; err.style.display = 'block'; return; }
-
+ 
     const { data } = await db.from('profiles').select('id,full_name').eq('email', email).single();
     if (!data) {
       err.textContent = 'No registered member found with that email.';
       err.style.display = 'block';
       return;
     }
-
+ 
     await db.from('profiles').update({ role: 'admin' }).eq('id', data.id);
     document.getElementById('admin-email').value = '';
     showToast(`${data.full_name} is now an admin.`, 'success');
     loadAdmins();
   }
-
+ 
   async function revokeAdmin(id) {
     if (!confirm('Remove admin access from this user?')) return;
     await db.from('profiles').update({ role: 'member' }).eq('id', id);
     showToast('Admin access revoked.', 'success');
     loadAdmins();
   }
-
+ 
   // Close modal on overlay click
-  document.getElementById('class-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeClassModal();
-  });
-</script>
-<script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/sw.js")
-        .then(r => console.log("SW registered:", r.scope))
-        .catch(e => console.warn("SW failed:", e));
-    });
-  }
-</script>
-</body>
-</html>
