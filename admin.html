@@ -1,454 +1,253 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Admin – Kommetjie Muay Thai</title>
-  <link rel="stylesheet" href="style.css"/>
-  <link rel="icon" href="logo.png"/>
-  <link rel="manifest" href="manifest.json"/>
-  <meta name="theme-color" content="#c4f135"/>
-  <meta name="mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title" content="KMT"/>
-  <link rel="apple-touch-icon" href="apple-touch-icon.png"/>
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png"/>
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon.ico"/>
-  <style>
-    .stat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:14px; margin-bottom:36px; }
-    .stat-card  { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
-    .stat-card__val  { font-family:var(--font-head); font-size:2rem; color:var(--lime); line-height:1; margin-bottom:4px; }
-    .stat-card__label{ font-size:.8rem; color:var(--mid); }
-    .modal-overlay {
-      display:none; position:fixed; inset:0; background:rgba(0,0,0,.7);
-      z-index:500; align-items:center; justify-content:center; padding:24px;
-    }
-    .modal-overlay.open { display:flex; }
-    .modal {
-      background:var(--dark); border:1px solid var(--border); border-radius:var(--radius);
-      padding:28px; width:100%; max-width:480px; max-height:90vh; overflow-y:auto;
-    }
-    .modal h3 { margin-bottom:20px; }
-  </style>
-</head>
-<body>
-
-<nav class="nav">
-  <div class="nav__inner">
-    <a class="nav__logo" href="index.html">
-      <img src="logo.png" alt="KMT" height="36" onerror="this.style.display='none'"/>
-      <span>KMT</span>
-    </a>
-    <div class="nav-spacer"></div>
-    <div id="nav-user"></div>
-  </div>
-</nav>
-
-<div class="page">
-  <div class="container">
-
-    <div id="loading-screen" class="loading-screen">
-      <div class="spinner"></div><span>Loading admin panel…</span>
-    </div>
-
-    <div id="main" style="display:none">
-
-      <div class="page-title">
-        <div style="font-size:.72rem;font-weight:700;letter-spacing:2px;color:var(--lime);text-transform:uppercase;margin-bottom:8px">Admin Panel</div>
-        <h1>Kommetjie Muay Thai</h1>
-      </div>
-
-      <!-- Stats row -->
-      <div class="stat-grid" id="stats-grid"></div>
-
-      <!-- Tabs -->
-      <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('schedule')">Schedule</button>
-        <button class="tab-btn"        onclick="switchTab('bookings')">Today's Bookings</button>
-        <button class="tab-btn"        onclick="switchTab('members')">Members</button>
-        <button class="tab-btn"        onclick="switchTab('admins')">Admins</button>
-      </div>
-
-      <!-- SCHEDULE TAB -->
-      <div class="tab-panel active" id="tab-schedule">
-        <div class="flex-between mb-24">
-          <h3>Weekly Classes</h3>
-          <button class="btn btn-primary btn-sm" onclick="openClassModal()">+ Add Class</button>
-        </div>
-        <div class="table-wrap">
-          <table id="schedule-table">
-            <thead>
-              <tr><th>Day</th><th>Time</th><th>Class</th><th>Capacity</th><th>Status</th><th></th></tr>
-            </thead>
-            <tbody id="schedule-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- BOOKINGS TAB -->
-      <div class="tab-panel" id="tab-bookings">
-        <h3 class="mb-24">Today's Bookings — <span id="today-label"></span></h3>
-        <div id="bookings-content"></div>
-      </div>
-
-      <!-- MEMBERS TAB -->
-      <div class="tab-panel" id="tab-members">
-        <div class="flex-between mb-24">
-          <h3>Members</h3>
-          <input type="text" id="member-search" placeholder="Search name or email…"
-            style="max-width:240px;padding:8px 14px;font-size:.85rem"
-            oninput="filterMembers()"/>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr><th>Name</th><th>Email</th><th>Phone</th><th>Joined</th><th>Status</th><th></th></tr>
-            </thead>
-            <tbody id="members-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ADMINS TAB -->
-      <div class="tab-panel" id="tab-admins">
-        <div class="flex-between mb-24">
-          <h3>Admin Users</h3>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Name</th><th>Email</th><th>Since</th><th></th></tr></thead>
-            <tbody id="admins-tbody"></tbody>
-          </table>
-        </div>
-        <div class="card mt-32" style="max-width:480px">
-          <h3 class="mb-16">Grant Admin Access</h3>
-          <p class="mb-16" style="font-size:.9rem">The member must already have a registered account.</p>
-          <div id="err-admin" class="form-error"></div>
-          <div class="form-group">
-            <label>Member Email</label>
-            <input type="email" id="admin-email" placeholder="member@email.com"/>
-          </div>
-          <button class="btn btn-primary" onclick="grantAdmin()">Grant Admin Access</button>
-        </div>
-      </div>
-
-    </div><!-- /main -->
-  </div>
-</div>
-
-<!-- Add/Edit Class Modal -->
-<div class="modal-overlay" id="class-modal">
-  <div class="modal">
-    <h3 id="modal-title">Add Class</h3>
-    <div id="err-modal" class="form-error"></div>
-    <div class="form-group">
-      <label>Class Name</label>
-      <input type="text" id="cls-name" value="Muay Thai"/>
-    </div>
-    <div class="form-group">
-      <label>Day of Week</label>
-      <select id="cls-dow">
-        <option value="1">Monday</option>
-        <option value="2">Tuesday</option>
-        <option value="3">Wednesday</option>
-        <option value="4">Thursday</option>
-        <option value="5">Friday</option>
-        <option value="6">Saturday</option>
-        <option value="0">Sunday</option>
-      </select>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Start Time</label>
-        <input type="time" id="cls-start"/>
-      </div>
-      <div class="form-group">
-        <label>End Time</label>
-        <input type="time" id="cls-end"/>
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Capacity</label>
-      <input type="number" id="cls-cap" value="20" min="1" max="100"/>
-    </div>
-    <div class="flex gap-16 mt-8">
-      <button class="btn btn-outline" onclick="closeClassModal()">Cancel</button>
-      <button class="btn btn-primary" style="flex:1" id="btn-save-cls" onclick="saveClass()">Save Class</button>
-    </div>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
-<script src="app2.js"></script>
-<script>
-  let adminProfile = null;
-  let allMembers   = [];
-  let editingClassId = null;
-
-  (async () => {
-    const result = await requireAdmin();
-    if (!result) return;
-    adminProfile = result.profile;
-    renderNav(adminProfile);
-
-    await Promise.all([loadStats(), loadSchedule(), loadBookings(), loadMembers()]);
-
-    document.getElementById('loading-screen').style.display = 'none';
-    document.getElementById('main').style.display = 'block';
-    document.getElementById('today-label').textContent =
-      new Date().toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  })();
-
-  // ── Tabs ──────────────────────────────────────────────────
-
-  function switchTab(name) {
-    document.querySelectorAll('.tab-btn').forEach((b,i) => {
-      const names = ['schedule','bookings','members','admins'];
-      b.classList.toggle('active', names[i] === name);
-    });
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    document.getElementById(`tab-${name}`).classList.add('active');
-    if (name === 'admins') loadAdmins();
+// app.js — shared utilities (include after config.js)
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: {
+    persistSession:    true,
+    storageKey:        'kmt-auth',
+    storage:           window.localStorage,
+    autoRefreshToken:  true,
+    detectSessionInUrl: false
   }
+});
 
-  // ── Stats ─────────────────────────────────────────────────
+// ── Auth ──────────────────────────────────────────────────────
 
-  async function loadStats() {
-    const today = new Date().toISOString().split('T')[0];
-    const [{ count: members }, { count: todayBookings }, { count: totalBookings }] = await Promise.all([
-      db.from('profiles').select('*', { count:'exact', head:true }).eq('role','member'),
-      db.from('bookings').select('*', { count:'exact', head:true }).eq('class_date', today).eq('status','confirmed'),
-      db.from('bookings').select('*', { count:'exact', head:true }).eq('status','confirmed')
-    ]);
+async function getSession() {
+  const { data: { session } } = await db.auth.getSession();
+  return session;
+}
 
-    document.getElementById('stats-grid').innerHTML = `
-      <div class="stat-card"><div class="stat-card__val">${members||0}</div><div class="stat-card__label">Members</div></div>
-      <div class="stat-card"><div class="stat-card__val">${todayBookings||0}</div><div class="stat-card__label">Booked Today</div></div>
-      <div class="stat-card"><div class="stat-card__val">${totalBookings||0}</div><div class="stat-card__label">Total Bookings</div></div>`;
+async function getProfile(userId) {
+  const { data } = await db.from('profiles').select('*').eq('id', userId).single();
+  return data;
+}
+
+async function requireAuth(redirect = 'login.html') {
+  const session = await getSession();
+  if (!session) { window.location.href = redirect; return null; }
+  return session;
+}
+
+async function requireAdmin() {
+  const session = await requireAuth();
+  if (!session) return null;
+  const profile = await getProfile(session.user.id);
+  if (!profile || profile.role !== 'admin') {
+    window.location.href = 'dashboard.html';
+    return null;
   }
+  return { session, profile };
+}
 
-  // ── Schedule ──────────────────────────────────────────────
+async function logout() {
+  await db.auth.signOut();
+  window.location.href = 'index.html';
+}
 
-  async function loadSchedule() {
-    const { data } = await db.from('classes').select('*').order('day_of_week').order('start_time');
-    const tbody = document.getElementById('schedule-tbody');
-    tbody.innerHTML = (data||[]).map(c => `
-      <tr>
-        <td>${DAYS[c.day_of_week]}</td>
-        <td>${formatTime(c.start_time)} – ${formatTime(c.end_time)}</td>
-        <td>${c.name}</td>
-        <td>${c.capacity}</td>
-        <td><span class="badge ${c.active ? 'badge-green' : 'badge-grey'}">${c.active ? 'Active' : 'Inactive'}</span></td>
-        <td>
-          <button class="btn btn-ghost btn-sm" onclick='editClass(${JSON.stringify(c)})'>Edit</button>
-          <button class="btn btn-ghost btn-sm text-mid" onclick="toggleClass('${c.id}',${c.active})">${c.active ? 'Deactivate' : 'Activate'}</button>
-        </td>
-      </tr>`).join('') || '<tr><td colspan="6" class="text-mid" style="text-align:center;padding:32px">No classes yet.</td></tr>';
+// ── Date / schedule helpers ───────────────────────────────────
+
+const DAYS       = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function formatTime(t) {
+  const [h, m] = t.split(':');
+  const hr = parseInt(h);
+  return `${hr > 12 ? hr - 12 : hr || 12}:${m} ${hr < 12 ? 'AM' : 'PM'}`;
+}
+
+function toDateString(d) { return d.toISOString().split('T')[0]; }
+
+// Returns the date (YYYY-MM-DD) for a given day-of-week in the current week
+// weekOffset 0 = this week, 1 = next week
+function dateForDow(dow, weekOffset = 0) {
+  const now     = new Date();
+  // Find Monday of the current week
+  const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon ... 6=Sat
+  const diffToMonday = (dayOfWeek === 0) ? -6 : 1 - dayOfWeek;
+  const monday  = new Date(now);
+  monday.setDate(now.getDate() + diffToMonday + weekOffset * 7);
+  monday.setHours(0, 0, 0, 0);
+  // dow: 1=Mon, 2=Tue ... 6=Sat, 0=Sun
+  const daysFromMonday = (dow === 0) ? 6 : dow - 1;
+  const d = new Date(monday);
+  d.setDate(monday.getDate() + daysFromMonday);
+  return toDateString(d);
+}
+
+// Can the user still cancel this booking?
+function canCancel(classDate, startTime) {
+  const now  = new Date();
+  const hour = parseInt(startTime.split(':')[0]);
+  let cutoff;
+  if (hour < 12) {
+    // Morning → cutoff 22:00 the night before
+    cutoff = new Date(classDate + 'T22:00:00');
+    cutoff.setDate(cutoff.getDate() - 1);
+  } else {
+    // Afternoon → cutoff 09:00 same day
+    cutoff = new Date(classDate + 'T09:00:00');
   }
+  return now < cutoff;
+}
 
-  // Class modal
-  function openClassModal(cls = null) {
-    editingClassId = cls ? cls.id : null;
-    document.getElementById('modal-title').textContent = cls ? 'Edit Class' : 'Add Class';
-    document.getElementById('cls-name').value  = cls?.name  || 'Muay Thai';
-    document.getElementById('cls-dow').value   = cls?.day_of_week ?? 1;
-    document.getElementById('cls-start').value = cls?.start_time?.slice(0,5) || '06:00';
-    document.getElementById('cls-end').value   = cls?.end_time?.slice(0,5)   || '07:00';
-    document.getElementById('cls-cap').value   = cls?.capacity || 20;
-    document.getElementById('err-modal').style.display = 'none';
-    document.getElementById('class-modal').classList.add('open');
+// ── UI helpers ────────────────────────────────────────────────
+
+function showToast(msg, type = 'info') {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div');
+  t.className = `toast toast--${type}`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('toast--show'));
+  setTimeout(() => {
+    t.classList.remove('toast--show');
+    setTimeout(() => t.remove(), 300);
+  }, 3500);
+}
+
+function setBtn(btn, loading) {
+  if (!btn) return;
+  btn.disabled = loading;
+  if (loading) { btn.dataset.orig = btn.textContent; btn.textContent = 'Please wait…'; }
+  else btn.textContent = btn.dataset.orig || btn.textContent;
+}
+
+function renderNav(profile, session) {
+  const nav = document.getElementById('nav-user');
+  if (!nav) return;
+  if (profile || session) {
+    nav.innerHTML = `
+      <a href="index.html"          class="nav-link">Home</a>
+      <a href="dashboard.html"       class="nav-link">My Classes</a>
+      <a href="dashboard.html#schedule" class="nav-link">Schedule</a>
+      ${profile?.role === 'admin' ? '<a href="admin.html" class="nav-link">Admin</a>' : ''}
+      <button class="btn btn-outline btn-sm" onclick="logout()">Log out</button>`;
+  } else {
+    nav.innerHTML = `
+      <a href="login.html"    class="nav-link">Log in</a>
+      <a href="register.html" class="btn btn-primary btn-sm">Join</a>`;
   }
+}
 
-  function editClass(cls) { openClassModal(cls); }
-  function closeClassModal() {
-    document.getElementById('class-modal').classList.remove('open');
-    editingClassId = null;
-  }
+// ── PWA Install Prompt ────────────────────────────────────
 
-  async function saveClass() {
-    const err = document.getElementById('err-modal');
-    err.style.display = 'none';
+(function () {
+  // Don't show if already running as installed PWA
+  if (window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true) return;
 
-    const payload = {
-      name:        document.getElementById('cls-name').value.trim() || 'Muay Thai',
-      day_of_week: parseInt(document.getElementById('cls-dow').value),
-      start_time:  document.getElementById('cls-start').value,
-      end_time:    document.getElementById('cls-end').value,
-      capacity:    parseInt(document.getElementById('cls-cap').value) || 20,
-      active:      true
-    };
+  // Don't show if user dismissed within the last 7 days
+  const dismissed = localStorage.getItem('kmt-pwa-dismissed');
+  if (dismissed && (Date.now() - parseInt(dismissed)) < 7 * 24 * 60 * 60 * 1000) return;
 
-    if (!payload.start_time || !payload.end_time) {
-      err.textContent = 'Please set start and end times.';
-      err.style.display = 'block';
-      return;
-    }
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) &&
+                !/crios/i.test(navigator.userAgent); // exclude Chrome on iOS
+  const isAndroid = /android/i.test(navigator.userAgent);
 
-    const btn = document.getElementById('btn-save-cls');
-    setBtn(btn, true);
+  // Only show on mobile
+  if (!isIOS && !isAndroid) return;
 
-    let error;
-    if (editingClassId) {
-      ({ error } = await db.from('classes').update(payload).eq('id', editingClassId));
-    } else {
-      ({ error } = await db.from('classes').insert(payload));
-    }
+  let deferredPrompt = null;
 
-    setBtn(btn, false);
-
-    if (error) {
-      err.textContent = 'Save failed: ' + error.message;
-      err.style.display = 'block';
-      return;
-    }
-
-    closeClassModal();
-    showToast(editingClassId ? 'Class updated.' : 'Class added.', 'success');
-    loadSchedule();
-    loadStats();
-  }
-
-  async function toggleClass(id, active) {
-    await db.from('classes').update({ active: !active }).eq('id', id);
-    showToast(!active ? 'Class activated.' : 'Class deactivated.', 'success');
-    loadSchedule();
-  }
-
-  // ── Today's Bookings ──────────────────────────────────────
-
-  async function loadBookings() {
-    const today = new Date().toISOString().split('T')[0];
-
-    const { data } = await db.from('bookings')
-      .select('*, profiles(full_name, email), classes(name, start_time, end_time)')
-      .eq('class_date', today)
-      .eq('status', 'confirmed')
-      .order('class_id');
-
-    const el = document.getElementById('bookings-content');
-
-    if (!data || data.length === 0) {
-      el.innerHTML = '<div class="empty-state"><div class="emoji">🤷</div>No bookings for today yet.</div>';
-      return;
-    }
-
-    // Group by class
-    const grouped = {};
-    data.forEach(b => {
-      const key = `${b.class_id}`;
-      if (!grouped[key]) grouped[key] = { cls: b.classes, members: [] };
-      grouped[key].members.push(b.profiles);
-    });
-
-    el.innerHTML = Object.values(grouped).map(g => `
-      <div class="card mb-16">
-        <div class="flex-between mb-16">
-          <div>
-            <div style="font-family:var(--font-head);font-size:1.1rem">${g.cls.name}</div>
-            <div style="color:var(--lime);font-size:.9rem">${formatTime(g.cls.start_time)} – ${formatTime(g.cls.end_time)}</div>
-          </div>
-          <span class="badge badge-lime">${g.members.length} booked</span>
-        </div>
-        <div>
-          ${g.members.map(m => `
-            <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:.9rem">${m.full_name} <span style="color:var(--mid)">${m.email}</span></div>
-          `).join('')}
-        </div>
-      </div>`).join('');
-  }
-
-  // ── Members ───────────────────────────────────────────────
-
-  async function loadMembers() {
-    const { data } = await db.from('profiles').select('*').eq('role','member').order('full_name');
-    allMembers = data || [];
-    renderMembers(allMembers);
-  }
-
-  function renderMembers(members) {
-    document.getElementById('members-tbody').innerHTML = members.map(m => `
-      <tr>
-        <td>${m.full_name}</td>
-        <td style="color:var(--mid)">${m.email}</td>
-        <td style="color:var(--mid)">${m.phone || '–'}</td>
-        <td style="color:var(--mid)">${new Date(m.created_at).toLocaleDateString('en-ZA')}</td>
-        <td><span class="badge ${m.active ? 'badge-green' : 'badge-red'}">${m.active ? 'Active' : 'Inactive'}</span></td>
-        <td>
-          <button class="btn btn-ghost btn-sm" onclick="toggleMember('${m.id}',${m.active})">
-            ${m.active ? 'Deactivate' : 'Activate'}
-          </button>
-        </td>
-      </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--mid)">No members yet.</td></tr>';
-  }
-
-  function filterMembers() {
-    const q = document.getElementById('member-search').value.toLowerCase();
-    renderMembers(allMembers.filter(m =>
-      m.full_name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q)));
-  }
-
-  async function toggleMember(id, active) {
-    await db.from('profiles').update({ active: !active }).eq('id', id);
-    showToast(!active ? 'Member activated.' : 'Member deactivated.', 'success');
-    loadMembers();
-  }
-
-  // ── Admins ────────────────────────────────────────────────
-
-  async function loadAdmins() {
-    const { data } = await db.from('profiles').select('*').eq('role','admin').order('full_name');
-    document.getElementById('admins-tbody').innerHTML = (data||[]).map(a => `
-      <tr>
-        <td>${a.full_name}</td>
-        <td style="color:var(--mid)">${a.email}</td>
-        <td style="color:var(--mid)">${new Date(a.created_at).toLocaleDateString('en-ZA')}</td>
-        <td>
-          ${a.id !== adminProfile.id ? `<button class="btn btn-ghost btn-sm text-mid" onclick="revokeAdmin('${a.id}')">Revoke</button>` : '<span style="color:var(--mid);font-size:.8rem">You</span>'}
-        </td>
-      </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;padding:32px;color:var(--mid)">No admins found.</td></tr>';
-  }
-
-  async function grantAdmin() {
-    const err = document.getElementById('err-admin');
-    err.style.display = 'none';
-    const email = document.getElementById('admin-email').value.trim().toLowerCase();
-    if (!email) { err.textContent = 'Enter an email address.'; err.style.display = 'block'; return; }
-
-    const { data } = await db.from('profiles').select('id,full_name').eq('email', email).single();
-    if (!data) {
-      err.textContent = 'No registered member found with that email.';
-      err.style.display = 'block';
-      return;
-    }
-
-    await db.from('profiles').update({ role: 'admin' }).eq('id', data.id);
-    document.getElementById('admin-email').value = '';
-    showToast(`${data.full_name} is now an admin.`, 'success');
-    loadAdmins();
-  }
-
-  async function revokeAdmin(id) {
-    if (!confirm('Remove admin access from this user?')) return;
-    await db.from('profiles').update({ role: 'member' }).eq('id', id);
-    showToast('Admin access revoked.', 'success');
-    loadAdmins();
-  }
-
-  // Close modal on overlay click
-  document.getElementById('class-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeClassModal();
+  // Capture the Android install prompt event
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Show our custom sheet after a short delay
+    setTimeout(showSheet, 2500);
   });
-</script>
-<script>
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("/sw.js")
-        .then(r => console.log("SW registered:", r.scope))
-        .catch(e => console.warn("SW failed:", e));
+
+  function buildSheet() {
+    // Remove any existing sheet
+    document.getElementById('pwa-backdrop')?.remove();
+
+    const backdrop = document.createElement('div');
+    backdrop.id = 'pwa-backdrop';
+    backdrop.className = 'pwa-backdrop';
+    backdrop.addEventListener('click', dismissSheet);
+
+    const sheet = document.createElement('div');
+    sheet.className = 'pwa-sheet';
+    sheet.addEventListener('click', e => e.stopPropagation());
+
+    if (isIOS) {
+      sheet.innerHTML = `
+        <div class="pwa-sheet__handle"></div>
+        <div class="pwa-sheet__top">
+          <div class="pwa-sheet__icon"><img src="icons/icon-192.png" alt="KMT"/></div>
+          <div class="pwa-sheet__info">
+            <div class="pwa-sheet__title">Install KMT App</div>
+            <div class="pwa-sheet__sub">kommetjiemuaythai.co.za</div>
+          </div>
+        </div>
+        <p class="pwa-sheet__desc">Add this app to your home screen for quick access to your classes.</p>
+        <div class="ios-steps">
+          <div class="ios-step"><span class="step-icon">1️⃣</span> Tap the <strong>&nbsp;Share&nbsp;</strong> button at the bottom of Safari</div>
+          <div class="ios-step"><span class="step-icon">2️⃣</span> Scroll down and tap <strong>&nbsp;Add to Home Screen</strong></div>
+          <div class="ios-step"><span class="step-icon">3️⃣</span> Tap <strong>&nbsp;Add</strong> in the top right corner</div>
+        </div>
+        <div class="pwa-sheet__actions">
+          <button class="btn btn-outline btn-full" id="pwa-dismiss">Maybe later</button>
+        </div>`;
+    } else {
+      sheet.innerHTML = `
+        <div class="pwa-sheet__handle"></div>
+        <div class="pwa-sheet__top">
+          <div class="pwa-sheet__icon"><img src="icons/icon-192.png" alt="KMT"/></div>
+          <div class="pwa-sheet__info">
+            <div class="pwa-sheet__title">Install KMT App</div>
+            <div class="pwa-sheet__sub">kommetjiemuaythai.co.za</div>
+          </div>
+        </div>
+        <p class="pwa-sheet__desc">Install the app for quick access to your classes — no App Store needed.</p>
+        <div class="pwa-sheet__actions">
+          <button class="btn btn-primary btn-full" id="pwa-install">📲 Add to Home Screen</button>
+          <button class="btn btn-outline btn-full" id="pwa-dismiss">Maybe later</button>
+        </div>`;
+    }
+
+    backdrop.appendChild(sheet);
+    document.body.appendChild(backdrop);
+
+    // Wire up buttons
+    document.getElementById('pwa-dismiss')?.addEventListener('click', dismissSheet);
+    document.getElementById('pwa-install')?.addEventListener('click', installApp);
+
+    // Animate in
+    requestAnimationFrame(() => {
+      backdrop.classList.add('show');
+      requestAnimationFrame(() => sheet.classList.add('show'));
     });
   }
-</script>
-</body>
-</html>
+
+  function showSheet() {
+    buildSheet();
+  }
+
+  function dismissSheet() {
+    const backdrop = document.getElementById('pwa-backdrop');
+    const sheet    = backdrop?.querySelector('.pwa-sheet');
+    if (sheet)    sheet.classList.remove('show');
+    if (backdrop) {
+      backdrop.classList.remove('show');
+      setTimeout(() => backdrop.remove(), 350);
+    }
+    localStorage.setItem('kmt-pwa-dismissed', Date.now().toString());
+  }
+
+  async function installApp() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    dismissSheet();
+    if (outcome === 'accepted') {
+      localStorage.setItem('kmt-pwa-dismissed', Date.now().toString());
+    }
+  }
+
+  // iOS: show after delay since there's no beforeinstallprompt event
+  if (isIOS) {
+    setTimeout(showSheet, 2500);
+  }
+})();
