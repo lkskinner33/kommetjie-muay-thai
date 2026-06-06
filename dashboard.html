@@ -237,7 +237,8 @@ function dateForDow(dow, weekOffset) {
         if (isPast) {
           actionHtml = `<div class="locked-msg">Session passed</div>`;
         } else if (isBooked) {
-          actionHtml = `<div class="booked-label">✓ Booked</div>`;
+          const isDropIn = (currentProfile.membership_status || 'none') !== 'active';
+          actionHtml = `<div class="booked-label">✓ ${isDropIn ? 'Drop-in Booked' : 'Booked'}</div>`;
           if (cancellable) {
             actionHtml += `<button class="btn btn-outline btn-sm btn-full" onclick="cancelBooking('${booking.id}','${cls.id}','${classDate}','${cls.start_time}')">Cancel</button>`;
           } else {
@@ -249,7 +250,9 @@ function dateForDow(dow, weekOffset) {
           if (isMember) {
             actionHtml = `<button class="btn btn-primary btn-sm btn-full" onclick="bookClass('${cls.id}','${classDate}','${cls.start_time}')">Book</button>`;
           } else {
-            actionHtml = `<button class="btn btn-outline btn-sm btn-full" onclick="payDropIn('${cls.id}','${classDate}','${cls.name}')">Pay & Book (R${DROPIN_PRICE})</button>`;
+            actionHtml = `
+              <div style="font-size:.72rem;font-weight:700;letter-spacing:1px;color:var(--mid);text-transform:uppercase;margin-bottom:8px">Drop-in</div>
+              <button class="btn btn-outline btn-sm btn-full" onclick="payDropIn('${cls.id}','${classDate}','${cls.name}')">Pay & Book — R${DROPIN_PRICE}</button>`;
           }
         }
  
