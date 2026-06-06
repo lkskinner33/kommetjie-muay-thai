@@ -156,6 +156,13 @@
     } else {
       renderWeek();
     }
+
+    // Switch to correct tab based on URL hash
+    if (window.location.hash === '#schedule') {
+      switchSection('schedule');
+    } else if (window.location.hash === '#attendance') {
+      switchSection('register');
+    }
   })();
 
   // ── Week rendering ────────────────────────────────────────
