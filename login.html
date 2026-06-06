@@ -17,7 +17,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.ico"/>
 </head>
 <body>
-
+ 
 <nav class="nav">
   <div class="nav__inner">
     <a class="nav__logo" href="index.html">
@@ -28,11 +28,11 @@
     <div id="nav-user"></div>
   </div>
 </nav>
-
+ 
 <div class="page">
   <div class="container--narrow">
     <div style="max-width:420px;margin:0 auto">
-
+ 
       <!-- Email step -->
       <div id="step-email">
         <div class="page-title text-center">
@@ -54,7 +54,7 @@
           </p>
         </div>
       </div>
-
+ 
       <!-- OTP step -->
       <div id="step-otp" style="display:none">
         <div class="page-title text-center">
@@ -77,11 +77,11 @@
           </div>
         </div>
       </div>
-
+ 
     </div>
   </div>
 </div>
-
+ 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="app2.js"></script>
@@ -91,73 +91,73 @@
     if (session) { window.location.href = 'dashboard.html'; return; }
     renderNav(null);
   })();
-
+ 
   let currentEmail = '';
-
+ 
   async function sendOTP() {
     const err = document.getElementById('err-email');
     err.style.display = 'none';
     const email = document.getElementById('email').value.trim();
-
+ 
     if (!email || !email.includes('@')) {
       err.textContent = 'Please enter a valid email address.';
       err.style.display = 'block';
       return;
     }
-
+ 
     const btn = document.getElementById('btn-send');
     setBtn(btn, true);
-
+ 
     // Use shouldCreateUser:true so Supabase never blocks on unknown emails.
     // If someone without a profile verifies, we catch it after OTP step.
     const { error } = await db.auth.signInWithOtp({
       email,
       options: { shouldCreateUser: true }
     });
-
+ 
     setBtn(btn, false);
-
+ 
     if (error) {
       err.textContent = error.message || 'Failed to send code. Please try again.';
       err.style.display = 'block';
       return;
     }
-
+ 
     currentEmail = email;
     document.getElementById('otp-email-label').textContent = email;
     document.getElementById('step-email').style.display = 'none';
     document.getElementById('step-otp').style.display = 'block';
     setTimeout(() => document.getElementById('otp_code').focus(), 100);
   }
-
+ 
   async function verifyOTP() {
     const err = document.getElementById('err-otp');
     err.style.display = 'none';
     const code = document.getElementById('otp_code').value.trim();
-
+ 
     if (code.length !== 6) {
       err.textContent = 'Please enter the 6-digit code from your email.';
       err.style.display = 'block';
       return;
     }
-
+ 
     const btn = document.getElementById('btn-verify');
     setBtn(btn, true);
-
+ 
     const { error } = await db.auth.verifyOtp({
       email: currentEmail,
       token: code,
       type: 'email'
     });
-
+ 
     setBtn(btn, false);
-
+ 
     if (error) {
       err.textContent = 'Invalid or expired code. Please try again.';
       err.style.display = 'block';
       return;
     }
-
+ 
     // Check profile and membership status
     const { data: { session } } = await db.auth.getSession();
     if (session) {
@@ -176,20 +176,20 @@
     }
     window.location.href = 'index.html';
   }
-
+ 
   async function resendOTP(e) {
     e.preventDefault();
     await db.auth.signInWithOtp({ email: currentEmail, options: { shouldCreateUser: true } });
     showToast('Code resent — check your inbox.', 'success');
   }
-
+ 
   function backToEmail(e) {
     e.preventDefault();
     document.getElementById('step-otp').style.display  = 'none';
     document.getElementById('step-email').style.display = 'block';
     document.getElementById('otp_code').value = '';
   }
-
+ 
   // Allow pressing Enter on inputs
   document.addEventListener('keydown', e => {
     if (e.key !== 'Enter') return;
