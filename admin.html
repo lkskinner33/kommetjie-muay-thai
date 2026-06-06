@@ -322,7 +322,7 @@
     const today = new Date().toISOString().split('T')[0];
  
     const { data } = await db.from('bookings')
-      .select('*, profiles(full_name, email), classes(name, start_time, end_time)')
+      .select('*, profiles(full_name, email, membership_status), classes(name, start_time, end_time)')
       .gte('class_date', today)
       .eq('status', 'confirmed')
       .order('class_date')
@@ -366,7 +366,13 @@
               </div>
               <div>
                 ${g.members.map(m => `
-                  <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:.9rem">${m.full_name} <span style="color:var(--mid)">${m.email}</span></div>
+                  <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:.9rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                    <span>${m.full_name}</span>
+                    <span style="color:var(--mid)">${m.email}</span>
+                    ${(m.membership_status || 'none') === 'active'
+                      ? '<span class="badge badge-lime" style="font-size:.65rem">Member</span>'
+                      : '<span class="badge badge-grey" style="font-size:.65rem">Drop-in</span>'}
+                  </div>
                 `).join('')}
               </div>
             </div>`).join('')}
@@ -466,3 +472,18 @@
   }
  
   // Close modal on overlay click
+  document.getElementById('class-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeClassModal();
+  });
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js")
+        .then(r => console.log("SW registered:", r.scope))
+        .catch(e => console.warn("SW failed:", e));
+    });
+  }
+</script>
+</body>
+</html>
