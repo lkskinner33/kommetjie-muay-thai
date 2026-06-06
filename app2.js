@@ -60,17 +60,22 @@ function toDateString(d) { return d.toISOString().split('T')[0]; }
 // Returns the date (YYYY-MM-DD) for a given day-of-week in the current week
 // weekOffset 0 = this week, 1 = next week
 function dateForDow(dow, weekOffset = 0) {
-  const now     = new Date();
-  // Find Monday of the current week
-  const dayOfWeek = now.getDay(); // 0=Sun, 1=Mon ... 6=Sat
+  // Use local date parts to avoid timezone issues
+  const now        = new Date();
+  const localYear  = now.getFullYear();
+  const localMonth = now.getMonth();
+  const localDate  = now.getDate();
+  const dayOfWeek  = now.getDay(); // 0=Sun, 1=Mon ... 6=Sat
+ 
+  // Find Monday of current week
   const diffToMonday = (dayOfWeek === 0) ? -6 : 1 - dayOfWeek;
-  const monday  = new Date(now);
-  monday.setDate(now.getDate() + diffToMonday + weekOffset * 7);
-  monday.setHours(0, 0, 0, 0);
+ 
+  // Build Monday as a pure local date (no time component)
+  const monday = new Date(localYear, localMonth, localDate + diffToMonday + weekOffset * 7);
+ 
   // dow: 1=Mon, 2=Tue ... 6=Sat, 0=Sun
   const daysFromMonday = (dow === 0) ? 6 : dow - 1;
-  const d = new Date(monday);
-  d.setDate(monday.getDate() + daysFromMonday);
+  const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + daysFromMonday);
   return toDateString(d);
 }
  
@@ -250,3 +255,4 @@ function renderNav(profile, session) {
     setTimeout(showSheet, 2500);
   }
 })();
+ 
