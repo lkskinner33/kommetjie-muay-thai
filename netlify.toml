@@ -2,7 +2,7 @@
   command = "bash build.sh"
   publish = "."
 [build.environment]
-  SECRETS_SCAN_OMIT_PATHS = "config.js,app.js"
+  SECRETS_SCAN_OMIT_PATHS = "config.js,app.js,style.css"
 [functions]
   directory = "netlify/functions"
 [[headers]]
@@ -20,5 +20,3 @@
   for = "/*"
   [headers.values]
     X-Content-Type-Options = "nosniff"
-
-    
