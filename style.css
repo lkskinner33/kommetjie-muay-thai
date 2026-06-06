@@ -101,7 +101,6 @@ small { font-size: 0.8rem; color: var(--mid); }
   transition: all .3s;
 }
 .nav-mobile-menu {
-  display: none;
   position: fixed;
   top: 73px;
   left: 0; right: 0;
@@ -111,6 +110,7 @@ small { font-size: 0.8rem; color: var(--mid); }
   z-index: 99;
   flex-direction: column;
   gap: 4px;
+  display: none;
 }
 .nav-mobile-menu.open { display: flex; }
 .nav-mobile-menu a,

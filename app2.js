@@ -143,10 +143,11 @@ function renderNav(profile, session) {
     hamburger.onclick = toggleMobileMenu;
     nav.parentElement.appendChild(hamburger);
  
-    // Mobile dropdown menu
+    // Mobile dropdown menu (hidden by default, shown via CSS on mobile only)
     const mobileMenu = document.createElement('div');
     mobileMenu.className = 'nav-mobile-menu';
     mobileMenu.id = 'nav-mobile-menu';
+    mobileMenu.style.display = 'none';
     mobileMenu.innerHTML = `
       <a href="index.html">Home</a>
       <a href="dashboard.html">My Classes</a>
@@ -163,7 +164,15 @@ function renderNav(profile, session) {
  
 function toggleMobileMenu() {
   const menu = document.getElementById('nav-mobile-menu');
-  if (menu) menu.classList.toggle('open');
+  if (!menu) return;
+  const isOpen = menu.classList.contains('open');
+  if (isOpen) {
+    menu.classList.remove('open');
+    menu.style.display = 'none';
+  } else {
+    menu.style.display = 'flex';
+    menu.classList.add('open');
+  }
 }
  
 // Close mobile menu when clicking outside
@@ -172,6 +181,7 @@ document.addEventListener('click', function(e) {
   const hamburger = document.getElementById('nav-hamburger');
   if (menu && hamburger && !menu.contains(e.target) && !hamburger.contains(e.target)) {
     menu.classList.remove('open');
+    menu.style.display = 'none';
   }
 });
  
