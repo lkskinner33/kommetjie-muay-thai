@@ -48,7 +48,7 @@
   </style>
 </head>
 <body>
- 
+
 <nav class="nav">
   <div class="nav__inner">
     <a class="nav__logo" href="index.html">
@@ -59,30 +59,30 @@
     <div id="nav-user"></div>
   </div>
 </nav>
- 
+
 <div class="page">
   <div class="container--narrow">
- 
+
     <div id="loading-screen" class="loading-screen">
       <div class="spinner"></div><span>Loading classes…</span>
     </div>
- 
+
     <div id="main" style="display:none">
       <div class="page-title">
         <div style="font-size:.72rem;font-weight:700;letter-spacing:2px;color:var(--lime);text-transform:uppercase;margin-bottom:8px">Drop-in Class</div>
         <h1>Pick a Class</h1>
         <p>R150 per session. Select a class below then proceed to payment.</p>
       </div>
- 
+
       <!-- Week navigation -->
       <div class="week-nav">
         <button class="btn btn-outline btn-sm" id="btn-prev" onclick="changeWeek(-1)">← Prev</button>
         <h3 id="week-label" class="text-center"></h3>
         <button class="btn btn-outline btn-sm" id="btn-next" onclick="changeWeek(1)">Next →</button>
       </div>
- 
+
       <div id="class-grid" class="class-pick-grid"></div>
- 
+
       <!-- Selected class summary -->
       <div class="selected-summary" id="selected-summary">
         <div style="font-size:.75rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--lime);margin-bottom:8px">Selected Class</div>
@@ -91,10 +91,10 @@
         <button class="btn btn-primary btn-full" id="btn-pay" onclick="payDropIn()">Pay R150 & Book →</button>
       </div>
     </div>
- 
+
   </div>
 </div>
- 
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script src="config.js"></script>
@@ -116,7 +116,7 @@
     var dd    = String(t.getDate()).padStart(2, '0');
     return t.getFullYear() + '-' + mm + '-' + dd;
   }
- 
+
   let currentProfile = null;
   let allClasses     = [];
   let weekOffset     = 0;
@@ -125,35 +125,35 @@
   let selectedClassName = null;
   let selectedStartTime = null;
   let selectedEndTime   = null;
- 
+
   const DROPIN_PRICE = 150;
- 
+
   (async () => {
     const session = await requireAuth();
     if (!session) return;
- 
+
     currentProfile = await getProfile(session.user.id);
     if (!currentProfile) { window.location.href = 'register.html?dropin=true'; return; }
- 
+
     // If already a member, redirect to dashboard
     if ((currentProfile.membership_status || 'none') === 'active') {
       window.location.href = 'dashboard.html';
       return;
     }
- 
+
     renderNav(currentProfile, session);
- 
+
     const { data: classes } = await db.from('classes')
       .select('*').eq('active', true).order('day_of_week').order('start_time');
- 
+
     allClasses = classes || [];
- 
+
     document.getElementById('loading-screen').style.display = 'none';
     document.getElementById('main').style.display = 'block';
- 
+
     renderWeek();
   })();
- 
+
   function changeWeek(delta) {
     weekOffset += delta;
     if (weekOffset < 0) weekOffset = 0;
@@ -162,7 +162,7 @@
     document.getElementById('selected-summary').style.display = 'none';
     renderWeek();
   }
- 
+
   function renderWeek() {
     const now       = new Date();
     const y = now.getFullYear(), m = now.getMonth(), d = now.getDate();
@@ -171,17 +171,17 @@
     const monday    = new Date(y, m, d + toMon + weekOffset * 7);
     const sunday    = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
     const fmt       = d => d.toLocaleDateString('en-ZA', {day:'numeric',month:'short'});
- 
+
     document.getElementById('week-label').textContent =
       weekOffset === 0 ? 'This Week' :
       weekOffset === 1 ? 'Next Week' :
       `${fmt(monday)} – ${fmt(sunday)}`;
- 
+
     document.getElementById('btn-prev').disabled = weekOffset <= 0;
- 
+
     const order = [1,2,3,4,5,6,0];
     let html = '';
- 
+
     order.forEach(dow => {
       allClasses.filter(c => c.day_of_week === dow).forEach(cls => {
         const classDate    = dateForDow(dow, weekOffset);
@@ -189,7 +189,7 @@
         const isPast       = classDateObj < now;
         const isSelected   = selectedClassId === cls.id && selectedClassDate === classDate;
         const dateLabel    = new Date(classDate + 'T12:00:00').toLocaleDateString('en-ZA', {weekday:'short',day:'numeric',month:'short'});
- 
+
         html += `
           <div class="class-pick-card${isPast ? ' past' : ''}${isSelected ? ' selected' : ''}"
                onclick="${isPast ? '' : `selectClass('${cls.id}','${classDate}','${cls.name}','${cls.start_time}','${cls.end_time}')`}">
@@ -201,34 +201,34 @@
           </div>`;
       });
     });
- 
+
     document.getElementById('class-grid').innerHTML = html || '<p class="text-mid">No classes scheduled this week.</p>';
   }
- 
+
   function selectClass(classId, classDate, className, startTime, endTime) {
     selectedClassId   = classId;
     selectedClassDate = classDate;
     selectedClassName = className;
     selectedStartTime = startTime;
     selectedEndTime   = endTime;
- 
+
     const dateLabel = new Date(classDate + 'T12:00:00').toLocaleDateString('en-ZA', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     });
- 
+
     document.getElementById('selected-label').textContent = `${className} · ${formatTime(startTime)} – ${formatTime(endTime)}`;
     document.getElementById('selected-date').textContent  = dateLabel;
     document.getElementById('selected-summary').style.display = 'block';
- 
+
     // Scroll to summary
     document.getElementById('selected-summary').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
- 
+
     renderWeek();
   }
- 
+
   function payDropIn() {
     if (!selectedClassId || !selectedClassDate) return;
- 
+
     const handler = PaystackPop.setup({
       key:      PAYSTACK_PUBLIC_KEY,
       email:    currentProfile.email,
@@ -245,7 +245,7 @@
     });
     handler.openIframe();
   }
- 
+
   function confirmDropIn(reference) {
     showToast('Confirming payment…', 'info');
     fetch('/.netlify/functions/verify-payment', {
@@ -265,6 +265,11 @@
     .catch(() => showToast('Network error. Please contact admin.', 'error'));
   }
 </script>
+
+<footer class="footer">
+  <small>Operated by Luke Kevin Skinner &nbsp;·&nbsp; Fight Ready. Mind Steady. &nbsp;·&nbsp; <a href="terms.html" style="color:var(--mid)">Terms</a></small>
+</footer>
+
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
