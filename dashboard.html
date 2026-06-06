@@ -172,14 +172,14 @@
   }
  
   function renderWeek() {
-    const now     = new Date();
-    const dayOfWeek = now.getDay(); // 0=Sun
+    const now        = new Date();
+    const localYear  = now.getFullYear();
+    const localMonth = now.getMonth();
+    const localDate  = now.getDate();
+    const dayOfWeek  = now.getDay(); // 0=Sun
     const diffToMonday = (dayOfWeek === 0) ? -6 : 1 - dayOfWeek;
-    const monday  = new Date(now);
-    monday.setDate(now.getDate() + diffToMonday + weekOffset * 7);
-    monday.setHours(0,0,0,0);
-    const sunday  = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
+    const monday  = new Date(localYear, localMonth, localDate + diffToMonday + weekOffset * 7);
+    const sunday  = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
  
     const fmtDate = d => d.toLocaleDateString('en-ZA',{day:'numeric',month:'short'});
     document.getElementById('week-label').textContent =
