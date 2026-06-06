@@ -1,4 +1,4 @@
-/ app.js — shared utilities (include after config.js)
+// app.js — shared utilities (include after config.js)
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
