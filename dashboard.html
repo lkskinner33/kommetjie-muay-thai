@@ -117,6 +117,24 @@
 <script src="config.js"></script>
 <script src="app2.js"></script>
 <script>
+// Local override of dateForDow — immune to timezone issues
+function dateForDow(dow, weekOffset) {
+  weekOffset = weekOffset || 0;
+  var now        = new Date();
+  var y          = now.getFullYear();
+  var m          = now.getMonth();
+  var d          = now.getDate();
+  var day        = now.getDay(); // 0=Sun
+  var toMonday   = day === 0 ? -6 : 1 - day;
+  var mondayDate = new Date(y, m, d + toMonday + weekOffset * 7);
+  var offset     = dow === 0 ? 6 : dow - 1;
+  var target     = new Date(mondayDate.getFullYear(), mondayDate.getMonth(), mondayDate.getDate() + offset);
+  var mm = String(target.getMonth() + 1).padStart(2, '0');
+  var dd = String(target.getDate()).padStart(2, '0');
+  return target.getFullYear() + '-' + mm + '-' + dd;
+}
+</script>
+<script>
   let currentProfile = null;
   let allClasses     = [];
   let allBookings    = [];
