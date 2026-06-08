@@ -1,0 +1,24 @@
+{
+  "name": "kommetjie-muay-thai",
+  "version": "1.0.0",
+  "description": "| File | Purpose |\r |---|---|\r | `schema.sql` | Run once in Supabase SQL Editor |\r | `config.js` | Paste your Supabase credentials here |\r | `app.js` | Shared utilities (do not edit) |\r | `style.css` | Design system (do not edit) |\r | `logo.png` | **Add your logo file here** |\r | `index.html` | Public homepage |\r | `register.html` | New member registration + indemnity |\r | `login.html` | OTP login |\r | `dashboard.html` | Member class booking |\r | `admin.html` | Admin panel |",
+  "main": "app2.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lkskinner33/kommetjie-muay-thai.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/lkskinner33/kommetjie-muay-thai/issues"
+  },
+  "homepage": "https://github.com/lkskinner33/kommetjie-muay-thai#readme",
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
+}

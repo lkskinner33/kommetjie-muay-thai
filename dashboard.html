@@ -327,6 +327,7 @@ function dateForDow(dow, weekOffset) {
     if (fresh) allBookings = fresh;
  
     showToast('Booked! See you there 🥊','success');
+    requestPushPermission();
     renderWeek();
   }
  
@@ -360,6 +361,46 @@ function dateForDow(dow, weekOffset) {
   // ── Membership ────────────────────────────────────────────
  
   const DROPIN_PRICE    = 150;   // ZAR — drop-in price per class
+  const VAPID_PUBLIC_KEY = 'BCcE9iZm5pDvm0WkUdqVb195iCU8D-FLKGKK7UxFD7e73d-VCP_uYmZo1l93K_W8c-QMgboH-JGE0TB761WCHK4';
+ 
+  async function requestPushPermission() {
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+    if (Notification.permission === 'granted') {
+      await subscribeToPush();
+      return;
+    }
+    if (Notification.permission === 'denied') return;
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') await subscribeToPush();
+  }
+ 
+  async function subscribeToPush() {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const existing = await reg.pushManager.getSubscription();
+      if (existing) return; // already subscribed
+ 
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+ 
+      await fetch('/.netlify/functions/save-subscription', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ subscription: sub, user_id: currentProfile.id })
+      });
+    } catch (err) {
+      console.warn('Push subscription failed:', err);
+    }
+  }
+ 
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw     = window.atob(base64);
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+  }
   const MONTHLY_PRICE   = 250;   // ZAR
  
   function renderMembershipBanner(profile) {
