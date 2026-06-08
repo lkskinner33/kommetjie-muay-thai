@@ -60,6 +60,22 @@
     .attendee-chip--you { border-color:var(--lime); color:var(--lime); }
     .today-label { font-size:.72rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--lime); margin-bottom:16px; }
     .week-label-section { font-size:.72rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--mid); margin:24px 0 12px; }
+    .app-banner {
+      background: rgba(196,241,53,.08); border: 1px solid var(--lime);
+      border-radius: var(--radius); padding: 16px 20px;
+      margin-bottom: 24px; display: flex; align-items: flex-start;
+      gap: 14px; position: relative;
+    }
+    .app-banner__icon { font-size: 1.4rem; flex-shrink: 0; }
+    .app-banner__body { flex: 1; }
+    .app-banner__title { font-weight: 700; font-size: .9rem; margin-bottom: 4px; color: var(--lime); }
+    .app-banner__msg { font-size: .85rem; color: #ccc; line-height: 1.5; }
+    .app-banner__close {
+      background: none; border: none; color: var(--mid);
+      font-size: 1.2rem; cursor: pointer; padding: 0; flex-shrink: 0;
+      line-height: 1;
+    }
+    .app-banner__close:hover { color: var(--text); }
   </style>
 </head>
 <body>
@@ -83,6 +99,16 @@
     </div>
 
     <div id="main" style="display:none">
+
+      <!-- App notification banner (once-off) -->
+      <div id="app-banner" class="app-banner" style="display:none">
+        <div class="app-banner__icon">📢</div>
+        <div class="app-banner__body">
+          <div class="app-banner__title" id="app-banner-title"></div>
+          <div class="app-banner__msg"   id="app-banner-msg"></div>
+        </div>
+        <button class="app-banner__close" onclick="dismissBanner()">✕</button>
+      </div>
 
       <!-- Membership banner -->
       <div id="membership-banner" class="membership-banner membership-banner--none" style="display:none"></div>
@@ -176,6 +202,7 @@ function dateForDow(dow, weekOffset) {
     document.getElementById('subtext').textContent  = 'Book your classes for the week below.';
 
     renderMembershipBanner(currentProfile);
+    renderAppBanner();
 
     // Request push permission on load (not just after booking)
     requestPushPermission();
@@ -626,6 +653,27 @@ function dateForDow(dow, weekOffset) {
     });
 
     el.innerHTML = html;
+  }
+
+  // ── App Notification Banner ──────────────────────────────
+
+  const BANNER_KEY = 'kmt-banner-v1'; // change version to show a new banner
+
+  // Edit title and message here to set the banner content
+  const BANNER_TITLE = 'Welcome to the new KMT app! 🥊';
+  const BANNER_MSG   = 'You can now book classes, track your attendance, and see who else is training with you. Tap "Book a Class" to get started. Book your classes, mo-fo!🥊';
+
+  function renderAppBanner() {
+    // Only show if not dismissed
+    if (localStorage.getItem(BANNER_KEY)) return;
+    document.getElementById('app-banner-title').textContent = BANNER_TITLE;
+    document.getElementById('app-banner-msg').textContent   = BANNER_MSG;
+    document.getElementById('app-banner').style.display     = 'flex';
+  }
+
+  function dismissBanner() {
+    document.getElementById('app-banner').style.display = 'none';
+    localStorage.setItem(BANNER_KEY, 'dismissed');
   }
 
   async function confirmPayment(reference, classId, classDate) {
