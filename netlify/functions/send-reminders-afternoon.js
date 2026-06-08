@@ -1,6 +1,7 @@
 // netlify/functions/send_reminders_afternoon.js
 // Scheduled function — runs at 4:30 PM SAST (2:30 PM UTC)
 // Sends reminders 1 hour before afternoon classes (5:30 PM)
+// Testing Deploy
  
 const webpush = require('web-push');
  
