@@ -1,6 +1,6 @@
 // sw.js — KMT Service Worker v11
-const CACHE = 'kmt-v11';
- 
+const CACHE = 'kmt-v12';
+
 // Auth-related pages must NEVER be cached — always serve fresh
 const NEVER_CACHE = [
   '/login.html',
@@ -10,7 +10,7 @@ const NEVER_CACHE = [
   '/app.js',
   '/config.js'
 ];
- 
+
 // Static assets safe to cache
 const SHELL = [
   '/index.html',
@@ -19,7 +19,7 @@ const SHELL = [
   '/icons/icon-192.png',
   '/icons/icon-512.png'
 ];
- 
+
 // Install — cache shell, skip waiting immediately
 self.addEventListener('install', event => {
   self.skipWaiting();
@@ -29,7 +29,7 @@ self.addEventListener('install', event => {
     )
   );
 });
- 
+
 // Activate — take control, wipe ALL old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
@@ -43,22 +43,22 @@ self.addEventListener('activate', event => {
       .then(() => self.clients.claim())
   );
 });
- 
+
 // Fetch — never cache auth pages, network-first for all HTML
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
- 
+
   // Always pass external requests straight through
   if (url.origin !== self.location.origin) return;
- 
+
   const path = url.pathname;
- 
+
   // Auth pages: always go to network, never touch cache
   if (NEVER_CACHE.some(p => path === p || path.endsWith(p))) {
     event.respondWith(fetch(event.request));
     return;
   }
- 
+
   // All HTML navigation: network first, cache as fallback
   if (event.request.mode === 'navigate') {
     event.respondWith(
@@ -77,7 +77,7 @@ self.addEventListener('fetch', event => {
     );
     return;
   }
- 
+
   // Static assets: cache first, then network
   event.respondWith(
     caches.match(event.request).then(cached => {
@@ -91,9 +91,9 @@ self.addEventListener('fetch', event => {
     })
   );
 });
- 
+
 // ── Push Notifications ────────────────────────────────────
- 
+
 self.addEventListener('push', event => {
   if (!event.data) return;
   const data = event.data.json();
@@ -106,7 +106,7 @@ self.addEventListener('push', event => {
     })
   );
 });
- 
+
 self.addEventListener('notificationclick', event => {
   event.notification.close();
   const url = event.notification.data?.url || '/dashboard.html';
