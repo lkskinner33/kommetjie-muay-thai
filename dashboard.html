@@ -572,95 +572,107 @@ function dateForDow(dow, weekOffset) {
     const el = document.getElementById('myclasses-content');
     el.innerHTML = '<div class="loading-screen" style="min-height:200px"><div class="spinner"></div></div>';
 
-    const today = new Date().toISOString().split('T')[0];
+    try {
+      const today = new Date().toISOString().split('T')[0];
 
-    // Get next 14 days of confirmed bookings
-    const twoWeeks = new Date();
-    twoWeeks.setDate(twoWeeks.getDate() + 14);
-    const until = twoWeeks.toISOString().split('T')[0];
+      const twoWeeks = new Date();
+      twoWeeks.setDate(twoWeeks.getDate() + 14);
+      const until = twoWeeks.toISOString().split('T')[0];
 
-    const { data: myBookings } = await db.from('bookings')
-      .select('*, classes(name, start_time, end_time)')
-      .eq('user_id', currentProfile.id)
-      .eq('status', 'confirmed')
-      .gte('class_date', today)
-      .lte('class_date', until)
-      .order('class_date')
-      .order('classes(start_time)');
+      const { data: myBookings, error: bookingError } = await db.from('bookings')
+        .select('*, classes(name, start_time, end_time)')
+        .eq('user_id', currentProfile.id)
+        .eq('status', 'confirmed')
+        .gte('class_date', today)
+        .lte('class_date', until)
+        .order('class_date')
+        .order('classes(start_time)');
 
-    if (!myBookings || myBookings.length === 0) {
-      el.innerHTML = `<div class="empty-state">
-        <div class="emoji">📅</div>
-        <p>You have no upcoming classes booked.</p>
-        <button class="btn btn-primary mt-16" onclick="switchSection('schedule')">Browse Schedule</button>
-      </div>`;
-      return;
-    }
+      if (bookingError) throw bookingError;
 
-    // Load all bookings for the same dates to find other attendees
-    const dates = [...new Set(myBookings.map(b => b.class_date))];
-    const classIds = [...new Set(myBookings.map(b => b.class_id))];
-
-    const { data: allBookings } = await db.from('bookings')
-      .select('class_id, class_date, profiles(full_name)')
-      .eq('status', 'confirmed')
-      .in('class_date', dates)
-      .in('class_id', classIds);
-
-    // Group attendees by class_id+class_date
-    const attendeeMap = {};
-    (allBookings || []).forEach(b => {
-      const key = `${b.class_id}_${b.class_date}`;
-      if (!attendeeMap[key]) attendeeMap[key] = [];
-      attendeeMap[key].push(b.profiles?.full_name || 'Member');
-    });
-
-    let html = '';
-    let lastDate = null;
-
-    myBookings.forEach(b => {
-      const isToday   = b.class_date === today;
-      const dateLabel = new Date(b.class_date + 'T12:00:00').toLocaleDateString('en-ZA', {
-        weekday: 'long', day: 'numeric', month: 'long'
-      });
-
-      if (b.class_date !== lastDate) {
-        html += `<div class="${isToday ? 'today-label' : 'week-label-section'}">${isToday ? '⚡ Today' : dateLabel}</div>`;
-        lastDate = b.class_date;
+      if (!myBookings || myBookings.length === 0) {
+        el.innerHTML = `<div class="empty-state">
+          <div class="emoji">📅</div>
+          <p>You have no upcoming classes booked.</p>
+          <button class="btn btn-primary mt-16" onclick="switchSection('schedule')">Browse Schedule</button>
+        </div>`;
+        return;
       }
 
-      const key       = `${b.class_id}_${b.class_date}`;
-      const attendees = attendeeMap[key] || [];
-      const others    = attendees.filter(n => n !== currentProfile.full_name);
+      // Load attendees for same class+date combinations
+      const dates    = [...new Set(myBookings.map(b => b.class_date))];
+      const classIds = [...new Set(myBookings.map(b => b.class_id))];
 
-      html += `
-        <div class="my-class-card${isToday ? ' my-class-card--today' : ''}">
-          <div class="my-class-card__header">
-            <div>
-              <div class="my-class-card__time">${formatTime(b.classes.start_time)} – ${formatTime(b.classes.end_time)}</div>
-              <div class="my-class-card__name">${b.classes.name}</div>
-            </div>
-            <div class="my-class-card__date">${isToday ? 'Today' : new Date(b.class_date + 'T12:00:00').toLocaleDateString('en-ZA', {weekday:'short', day:'numeric', month:'short'})}</div>
-          </div>
-          <div class="attendees">
-            <div class="attendees__label">Who's coming (${attendees.length})</div>
-            <div class="attendees__list">
-              <span class="attendee-chip attendee-chip--you">You</span>
-              ${others.map(n => `<span class="attendee-chip">${n.split(' ')[0]}</span>`).join('')}
-            </div>
-          </div>
-        </div>`;
-    });
+      const { data: allBookings } = await db.from('bookings')
+        .select('class_id, class_date, profiles(full_name)')
+        .eq('status', 'confirmed')
+        .in('class_date', dates)
+        .in('class_id', classIds);
 
-    el.innerHTML = html;
+      const attendeeMap = {};
+      (allBookings || []).forEach(b => {
+        const key = `${b.class_id}_${b.class_date}`;
+        if (!attendeeMap[key]) attendeeMap[key] = [];
+        if (b.profiles?.full_name) attendeeMap[key].push(b.profiles.full_name);
+      });
+
+      let html = '';
+      let lastDate = null;
+
+      myBookings.forEach(b => {
+        if (!b.classes) return; // skip if class data missing
+        const isToday   = b.class_date === today;
+        const dateLabel = new Date(b.class_date + 'T12:00:00').toLocaleDateString('en-ZA', {
+          weekday: 'long', day: 'numeric', month: 'long'
+        });
+
+        if (b.class_date !== lastDate) {
+          html += `<div class="${isToday ? 'today-label' : 'week-label-section'}">${isToday ? '⚡ Today' : dateLabel}</div>`;
+          lastDate = b.class_date;
+        }
+
+        const key       = `${b.class_id}_${b.class_date}`;
+        const attendees = attendeeMap[key] || [];
+        const others    = attendees.filter(n => n !== currentProfile.full_name);
+
+        html += `
+          <div class="my-class-card${isToday ? ' my-class-card--today' : ''}">
+            <div class="my-class-card__header">
+              <div>
+                <div class="my-class-card__time">${formatTime(b.classes.start_time)} – ${formatTime(b.classes.end_time)}</div>
+                <div class="my-class-card__name">${b.classes.name}</div>
+              </div>
+              <div class="my-class-card__date">${isToday ? 'Today' : new Date(b.class_date + 'T12:00:00').toLocaleDateString('en-ZA', {weekday:'short', day:'numeric', month:'short'})}</div>
+            </div>
+            <div class="attendees">
+              <div class="attendees__label">Who's coming (${attendees.length})</div>
+              <div class="attendees__list">
+                <span class="attendee-chip attendee-chip--you">You</span>
+                ${others.map(n => `<span class="attendee-chip">${n.split(' ')[0]}</span>`).join('')}
+              </div>
+            </div>
+          </div>`;
+      });
+
+      el.innerHTML = html || `<div class="empty-state"><div class="emoji">📅</div><p>No upcoming classes.</p></div>`;
+
+    } catch (err) {
+      console.error('loadMyClasses error:', err);
+      el.innerHTML = `<div class="empty-state">
+        <div class="emoji">⚠️</div>
+        <p>Couldn't load your classes. Please try again.</p>
+        <button class="btn btn-outline mt-16" onclick="loadMyClasses()">Retry</button>
+      </div>`;
+    }
   }
 
   // ── App Notification Banner ──────────────────────────────
 
-  //const BANNER_KEY = 'kmt-banner-v2'; // V1 already deployed previously. Change to V2 for new banner.
+  //const BANNER_KEY = 'kmt-banner-v1'; // change version to show a new banner
+
   // Edit title and message here to set the banner content
   //const BANNER_TITLE = 'Welcome to the new KMT app! 🥊';
-  //const BANNER_MSG   = 'You can now book classes, track your attendance, and see who else is training with you. Tap "Book a Class" to get started. Book your classes, mo-fo!🥊';
+  //const BANNER_MSG   = 'You can now book classes, track your attendance, and see who else is training with you. Tap "Book a Class" to get started.';
 
   function renderAppBanner() {
     // Only show if not dismissed
