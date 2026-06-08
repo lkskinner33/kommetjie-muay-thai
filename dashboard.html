@@ -570,13 +570,15 @@ function dateForDow(dow, weekOffset) {
       return;
     }
 
-    // For each booking, load all confirmed bookings for same class+date
-    const classDatePairs = myBookings.map(b => `(class_id.eq.${b.class_id},class_date.eq.${b.class_date})`);
+    // Load all bookings for the same dates to find other attendees
+    const dates = [...new Set(myBookings.map(b => b.class_date))];
+    const classIds = [...new Set(myBookings.map(b => b.class_id))];
 
     const { data: allBookings } = await db.from('bookings')
       .select('class_id, class_date, profiles(full_name)')
       .eq('status', 'confirmed')
-      .or(classDatePairs.join(','));
+      .in('class_date', dates)
+      .in('class_id', classIds);
 
     // Group attendees by class_id+class_date
     const attendeeMap = {};
