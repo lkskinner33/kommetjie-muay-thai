@@ -47,10 +47,23 @@
     .section-panel.active { display:block; }
     .register-table td { font-size:.85rem; }
     .register-date { font-size:.75rem; color:var(--mid); }
+    .my-class-card { background:var(--card); border:1.5px solid var(--border); border-radius:var(--radius); padding:20px 18px; margin-bottom:16px; }
+    .my-class-card--today { border-color:var(--lime); }
+    .my-class-card__header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+    .my-class-card__time { font-family:var(--font-head); font-size:1.2rem; color:var(--lime); }
+    .my-class-card__name { font-size:.85rem; color:var(--mid); margin-top:2px; }
+    .my-class-card__date { font-size:.8rem; color:var(--mid); }
+    .attendees { margin-top:12px; border-top:1px solid var(--border); padding-top:12px; }
+    .attendees__label { font-size:.7rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--mid); margin-bottom:8px; }
+    .attendees__list { display:flex; flex-wrap:wrap; gap:6px; }
+    .attendee-chip { background:#1e1e1e; border:1px solid var(--border); border-radius:20px; padding:4px 12px; font-size:.78rem; color:#ccc; }
+    .attendee-chip--you { border-color:var(--lime); color:var(--lime); }
+    .today-label { font-size:.72rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--lime); margin-bottom:16px; }
+    .week-label-section { font-size:.72rem; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--mid); margin:24px 0 12px; }
   </style>
 </head>
 <body>
- 
+
 <nav class="nav">
   <div class="nav__inner">
     <a class="nav__logo" href="index.html">
@@ -61,34 +74,42 @@
     <div id="nav-user"></div>
   </div>
 </nav>
- 
+
 <div class="page">
   <div class="container">
- 
+
     <div id="loading-screen" class="loading-screen">
       <div class="spinner"></div><span>Loading your classes…</span>
     </div>
- 
+
     <div id="main" style="display:none">
- 
+
       <!-- Membership banner -->
       <div id="membership-banner" class="membership-banner membership-banner--none" style="display:none"></div>
- 
+
       <div class="flex-between mb-32">
         <div>
           <h1 id="greeting"></h1>
           <p id="subtext" style="margin-top:4px"></p>
         </div>
       </div>
- 
+
       <!-- Section tabs -->
       <div class="section-tabs">
-        <button class="section-tab active" onclick="switchSection('schedule')">Schedule</button>
+        <button class="section-tab active" onclick="switchSection('myclasses')">My Classes</button>
+        <button class="section-tab"        onclick="switchSection('schedule')">Book a Class</button>
         <button class="section-tab"        onclick="switchSection('register')">Attendance</button>
       </div>
- 
+
+      <!-- MY CLASSES PANEL -->
+      <div class="section-panel active" id="panel-myclasses">
+        <div id="myclasses-content">
+          <div class="loading-screen" style="min-height:200px"><div class="spinner"></div></div>
+        </div>
+      </div>
+
       <!-- SCHEDULE PANEL -->
-      <div class="section-panel active" id="panel-schedule">
+      <div class="section-panel" id="panel-schedule">
         <div class="week-nav">
           <button class="btn btn-outline btn-sm" id="btn-prev" onclick="changeWeek(-1)">← Prev</button>
           <h2 id="week-label" class="text-center"></h2>
@@ -96,7 +117,7 @@
         </div>
         <div id="week-grid" class="week-grid"></div>
       </div>
- 
+
       <!-- ATTENDANCE PANEL -->
       <div class="section-panel" id="panel-register">
         <div class="flex-between mb-24">
@@ -107,11 +128,11 @@
           <div class="loading-screen" style="min-height:200px"><div class="spinner"></div></div>
         </div>
       </div>
- 
+
     </div>
   </div>
 </div>
- 
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script src="config.js"></script>
@@ -139,59 +160,61 @@ function dateForDow(dow, weekOffset) {
   let allClasses     = [];
   let allBookings    = [];
   let weekOffset     = 0;
- 
+
   (async () => {
     const session = await requireAuth();
     if (!session) return;
- 
+
     currentProfile = await getProfile(session.user.id);
     if (!currentProfile) { window.location.href = 'index.html'; return; }
- 
+
     renderNav(currentProfile, session);
- 
+
     const hour  = new Date().getHours();
     const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
     document.getElementById('greeting').textContent = `${greet} 👊`;
     document.getElementById('subtext').textContent  = 'Book your classes for the week below.';
- 
+
     renderMembershipBanner(currentProfile);
- 
+
     // Request push permission on load (not just after booking)
     requestPushPermission();
- 
+
     // Load classes & bookings
     const [{ data: classes }, { data: bookings }] = await Promise.all([
       db.from('classes').select('*').eq('active', true).order('day_of_week').order('start_time'),
       db.from('bookings').select('*').eq('user_id', currentProfile.id).eq('status','confirmed')
     ]);
- 
+
     allClasses  = classes  || [];
     allBookings = bookings || [];
- 
+
     document.getElementById('loading-screen').style.display = 'none';
     document.getElementById('main').style.display           = 'block';
- 
+
     if (allClasses.length === 0) {
       document.getElementById('week-grid').innerHTML = '<p class="text-mid">No classes have been scheduled yet. Check back soon.</p>';
     } else {
       renderWeek();
     }
- 
-    // Switch to correct tab based on URL hash
+
+    // Switch to correct tab based on URL hash, default to My Classes
     if (window.location.hash === '#schedule') {
       switchSection('schedule');
     } else if (window.location.hash === '#attendance') {
       switchSection('register');
+    } else {
+      switchSection('myclasses');
     }
   })();
- 
+
   // ── Week rendering ────────────────────────────────────────
- 
+
   function changeWeek(delta) {
     weekOffset += delta;
     renderWeek();
   }
- 
+
   function renderWeek() {
     const now        = new Date();
     const localYear  = now.getFullYear();
@@ -201,23 +224,23 @@ function dateForDow(dow, weekOffset) {
     const diffToMonday = (dayOfWeek === 0) ? -6 : 1 - dayOfWeek;
     const monday  = new Date(localYear, localMonth, localDate + diffToMonday + weekOffset * 7);
     const sunday  = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
- 
+
     const fmtDate = d => d.toLocaleDateString('en-ZA',{day:'numeric',month:'short'});
     document.getElementById('week-label').textContent =
       weekOffset === 0 ? 'This Week' :
       weekOffset === 1 ? 'Next Week' :
       `${fmtDate(monday)} – ${fmtDate(sunday)}`;
- 
+
     document.getElementById('btn-prev').disabled = false;
- 
+
     // Build cards for each class this week
     const order  = [1,2,3,4,5,6,0];
     let html     = '';
- 
+
     order.forEach(dow => {
       const weekClasses = allClasses.filter(c => c.day_of_week === dow);
       if (!weekClasses.length) return;
- 
+
       weekClasses.forEach(cls => {
         const classDate = dateForDow(dow, weekOffset);
         const classDateObj = new Date(classDate + 'T' + cls.start_time);
@@ -226,16 +249,16 @@ function dateForDow(dow, weekOffset) {
         const isBooked = !!booking;
         const cancellable = isBooked && canCancel(classDate, cls.start_time);
         const bookable = !isBooked && !isPast;
- 
+
         // Booking count for this class+date
         const countKey = `${cls.id}_${classDate}`;
- 
+
         let cardClass = 'class-card';
         if (isBooked) cardClass += ' class-card--booked';
         if (isPast)   cardClass += ' class-card--past';
- 
+
         const dateLabel = new Date(classDate + 'T12:00:00').toLocaleDateString('en-ZA',{weekday:'short',day:'numeric',month:'short'});
- 
+
         let actionHtml = '';
         if (isPast) {
           actionHtml = `<div class="locked-msg">Session passed</div>`;
@@ -258,7 +281,7 @@ function dateForDow(dow, weekOffset) {
               <button class="btn btn-outline btn-sm btn-full" onclick="payDropIn('${cls.id}','${classDate}','${cls.name}')">Pay & Book — R${DROPIN_PRICE}</button>`;
           }
         }
- 
+
         html += `
           <div class="${cardClass}" id="card-${cls.id}-${classDate}">
             <div class="class-card__day">${DAYS[dow]}</div>
@@ -270,102 +293,102 @@ function dateForDow(dow, weekOffset) {
           </div>`;
       });
     });
- 
+
     document.getElementById('week-grid').innerHTML = html || '<p class="text-mid">No classes scheduled this week.</p>';
- 
+
     // Load booking counts
     loadCounts();
   }
- 
+
   async function loadCounts() {
     // Get all confirmed bookings for classes in the visible week
     const order = [1,2,3,4,5,6,0];
     const dates  = order.map(d => dateForDow(d, weekOffset));
- 
+
     const { data } = await db.from('bookings')
       .select('class_id, class_date')
       .eq('status','confirmed')
       .in('class_date', dates);
- 
+
     if (!data) return;
     const counts = {};
     data.forEach(b => {
       const key = `${b.class_id}_${b.class_date}`;
       counts[key] = (counts[key] || 0) + 1;
     });
- 
+
     Object.entries(counts).forEach(([key, cnt]) => {
       const el = document.getElementById(`count-${key}`);
       if (el) el.textContent = `${cnt} ${cnt === 1 ? 'person' : 'people'} booked`;
     });
   }
- 
+
   // ── Book ──────────────────────────────────────────────────
- 
+
   async function bookClass(classId, classDate, startTime) {
     const classDateObj = new Date(classDate + 'T' + startTime);
     if (classDateObj < new Date()) return showToast('This session has already passed.','error');
- 
+
     const btn = document.querySelector(`#card-${classId}-${classDate} .btn-primary`);
     if (btn) btn.disabled = true;
- 
+
     const { error } = await db.from('bookings').upsert({
       user_id:    currentProfile.id,
       class_id:   classId,
       class_date: classDate,
       status:     'confirmed'
     }, { onConflict: 'user_id,class_id,class_date' });
- 
+
     if (error) {
       showToast('Booking failed. Please try again.','error');
       if (btn) btn.disabled = false;
       return;
     }
- 
+
     // Update local state
     allBookings.push({ id: 'temp', class_id: classId, class_date: classDate, status: 'confirmed' });
     // Refresh from DB to get real ID
     const { data: fresh } = await db.from('bookings').select('*')
       .eq('user_id', currentProfile.id).eq('status','confirmed');
     if (fresh) allBookings = fresh;
- 
+
     showToast('Booked! See you there 🥊','success');
     requestPushPermission();
     renderWeek();
   }
- 
+
   // ── Cancel ────────────────────────────────────────────────
- 
+
   async function cancelBooking(bookingId, classId, classDate, startTime) {
     if (!canCancel(classDate, startTime)) {
       showToast('Cancellation window has closed.','error');
       return;
     }
- 
+
     const btn = document.querySelector(`#card-${classId}-${classDate} .btn-outline`);
     if (btn) btn.disabled = true;
- 
+
     const { error } = await db.from('bookings').update({
       status: 'cancelled',
       cancelled_at: new Date().toISOString()
     }).eq('id', bookingId);
- 
+
     if (error) {
       showToast('Cancellation failed. Please try again.','error');
       if (btn) btn.disabled = false;
       return;
     }
- 
+
     allBookings = allBookings.filter(b => b.id !== bookingId);
     showToast('Booking cancelled.','info');
     renderWeek();
   }
- 
+
   // ── Membership ────────────────────────────────────────────
- 
+
   const DROPIN_PRICE    = 150;   // ZAR — drop-in price per class
   const VAPID_PUBLIC_KEY = 'BCcE9iZm5pDvm0WkUdqVb195iCU8D-FLKGKK7UxFD7e73d-VCP_uYmZo1l93K_W8c-QMgboH-JGE0TB761WCHK4';
- 
+
   async function requestPushPermission() {
     if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
     if (Notification.permission === 'granted') {
@@ -376,26 +399,26 @@ function dateForDow(dow, weekOffset) {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') await subscribeToPush();
   }
- 
+
   async function subscribeToPush() {
     try {
       const reg = await navigator.serviceWorker.ready;
- 
+
       // Unsubscribe from any existing subscription to get a fresh one
       const existing = await reg.pushManager.getSubscription();
       if (existing) await existing.unsubscribe();
- 
+
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
       });
- 
+
       const res = await fetch('/.netlify/functions/save_subscription', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ subscription: sub.toJSON(), user_id: currentProfile.id })
       });
- 
+
       if (res.ok) {
         console.log('Push subscription saved successfully');
       } else {
@@ -405,7 +428,7 @@ function dateForDow(dow, weekOffset) {
       console.warn('Push subscription failed:', err);
     }
   }
- 
+
   function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -413,16 +436,16 @@ function dateForDow(dow, weekOffset) {
     return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
   }
   const MONTHLY_PRICE   = 250;   // ZAR
- 
+
   function renderMembershipBanner(profile) {
     const el = document.getElementById('membership-banner');
     if (!el) return;
- 
+
     const status  = profile.membership_status || 'none';
     const expires = profile.membership_expires;
- 
+
     el.style.display = 'flex';
- 
+
     if (status === 'active') {
       el.className = 'membership-banner membership-banner--active';
       el.innerHTML = `
@@ -448,7 +471,7 @@ function dateForDow(dow, weekOffset) {
         <button class="btn btn-primary btn-sm" onclick="payMonthly()">Join — R${MONTHLY_PRICE}/mo</button>`;
     }
   }
- 
+
   function payMonthly() {
     const handler = PaystackPop.setup({
       key:       PAYSTACK_PUBLIC_KEY,
@@ -462,7 +485,7 @@ function dateForDow(dow, weekOffset) {
     });
     handler.openIframe();
   }
- 
+
   function payDropIn(classId, classDate, className) {
     const handler = PaystackPop.setup({
       key:      PAYSTACK_PUBLIC_KEY,
@@ -475,38 +498,39 @@ function dateForDow(dow, weekOffset) {
     });
     handler.openIframe();
   }
- 
+
   // ── Section switching ────────────────────────────────────
- 
+
   function switchSection(name) {
     document.querySelectorAll('.section-tab').forEach((b, i) => {
-      b.classList.toggle('active', ['schedule','register'][i] === name);
+      b.classList.toggle('active', ['myclasses','schedule','register'][i] === name);
     });
     document.querySelectorAll('.section-panel').forEach(p => p.classList.remove('active'));
     document.getElementById('panel-' + name).classList.add('active');
-    if (name === 'register') loadAttendance();
+    if (name === 'register')  loadAttendance();
+    if (name === 'myclasses') loadMyClasses();
   }
- 
+
   async function loadAttendance() {
     const el = document.getElementById('attendance-content');
     el.innerHTML = '<div class="loading-screen" style="min-height:200px"><div class="spinner"></div></div>';
- 
+
     const { data } = await db.from('bookings')
       .select('*, classes(name, start_time, end_time)')
       .eq('user_id', currentProfile.id)
       .eq('status', 'confirmed')
       .order('class_date', { ascending: false });
- 
+
     const count = document.getElementById('attendance-count');
- 
+
     if (!data || data.length === 0) {
       count.textContent = '0 classes';
       el.innerHTML = '<div class="empty-state"><div class="emoji">📋</div>No classes attended yet.</div>';
       return;
     }
- 
+
     count.textContent = data.length + ' ' + (data.length === 1 ? 'class' : 'classes');
- 
+
     el.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Class</th><th>Time</th></tr></thead><tbody>' +
       data.map(b => {
         const d    = new Date(b.class_date + 'T12:00:00');
@@ -516,7 +540,92 @@ function dateForDow(dow, weekOffset) {
       }).join('') +
       '</tbody></table></div>';
   }
- 
+
+  async function loadMyClasses() {
+    const el = document.getElementById('myclasses-content');
+    el.innerHTML = '<div class="loading-screen" style="min-height:200px"><div class="spinner"></div></div>';
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // Get next 14 days of confirmed bookings
+    const twoWeeks = new Date();
+    twoWeeks.setDate(twoWeeks.getDate() + 14);
+    const until = twoWeeks.toISOString().split('T')[0];
+
+    const { data: myBookings } = await db.from('bookings')
+      .select('*, classes(name, start_time, end_time)')
+      .eq('user_id', currentProfile.id)
+      .eq('status', 'confirmed')
+      .gte('class_date', today)
+      .lte('class_date', until)
+      .order('class_date')
+      .order('classes(start_time)');
+
+    if (!myBookings || myBookings.length === 0) {
+      el.innerHTML = `<div class="empty-state">
+        <div class="emoji">📅</div>
+        <p>You have no upcoming classes booked.</p>
+        <button class="btn btn-primary mt-16" onclick="switchSection('schedule')">Browse Schedule</button>
+      </div>`;
+      return;
+    }
+
+    // For each booking, load all confirmed bookings for same class+date
+    const classDatePairs = myBookings.map(b => `(class_id.eq.${b.class_id},class_date.eq.${b.class_date})`);
+
+    const { data: allBookings } = await db.from('bookings')
+      .select('class_id, class_date, profiles(full_name)')
+      .eq('status', 'confirmed')
+      .or(classDatePairs.join(','));
+
+    // Group attendees by class_id+class_date
+    const attendeeMap = {};
+    (allBookings || []).forEach(b => {
+      const key = `${b.class_id}_${b.class_date}`;
+      if (!attendeeMap[key]) attendeeMap[key] = [];
+      attendeeMap[key].push(b.profiles?.full_name || 'Member');
+    });
+
+    let html = '';
+    let lastDate = null;
+
+    myBookings.forEach(b => {
+      const isToday   = b.class_date === today;
+      const dateLabel = new Date(b.class_date + 'T12:00:00').toLocaleDateString('en-ZA', {
+        weekday: 'long', day: 'numeric', month: 'long'
+      });
+
+      if (b.class_date !== lastDate) {
+        html += `<div class="${isToday ? 'today-label' : 'week-label-section'}">${isToday ? '⚡ Today' : dateLabel}</div>`;
+        lastDate = b.class_date;
+      }
+
+      const key       = `${b.class_id}_${b.class_date}`;
+      const attendees = attendeeMap[key] || [];
+      const others    = attendees.filter(n => n !== currentProfile.full_name);
+
+      html += `
+        <div class="my-class-card${isToday ? ' my-class-card--today' : ''}">
+          <div class="my-class-card__header">
+            <div>
+              <div class="my-class-card__time">${formatTime(b.classes.start_time)} – ${formatTime(b.classes.end_time)}</div>
+              <div class="my-class-card__name">${b.classes.name}</div>
+            </div>
+            <div class="my-class-card__date">${isToday ? 'Today' : new Date(b.class_date + 'T12:00:00').toLocaleDateString('en-ZA', {weekday:'short', day:'numeric', month:'short'})}</div>
+          </div>
+          <div class="attendees">
+            <div class="attendees__label">Who's coming (${attendees.length})</div>
+            <div class="attendees__list">
+              <span class="attendee-chip attendee-chip--you">You</span>
+              ${others.map(n => `<span class="attendee-chip">${n.split(' ')[0]}</span>`).join('')}
+            </div>
+          </div>
+        </div>`;
+    });
+
+    el.innerHTML = html;
+  }
+
   async function confirmPayment(reference, classId, classDate) {
     showToast('Confirming payment…', 'info');
     try {
@@ -531,7 +640,7 @@ function dateForDow(dow, weekOffset) {
         const { data: fresh } = await db.from('profiles').select('*').eq('id', currentProfile.id).single();
         if (fresh) currentProfile = fresh;
         renderMembershipBanner(currentProfile);
- 
+
         if (data.payment_type === 'dropin' && classId && classDate) {
           const { data: freshBookings } = await db.from('bookings').select('*').eq('user_id', currentProfile.id).eq('status','confirmed');
           if (freshBookings) allBookings = freshBookings;
@@ -548,11 +657,11 @@ function dateForDow(dow, weekOffset) {
     }
   }
 </script>
- 
+
 <footer class="footer">
   <small>Operated by Luke Kevin Skinner &nbsp;·&nbsp; Fight Ready. Mind Steady. &nbsp;·&nbsp; <a href="terms.html" style="color:var(--mid)">Terms</a></small>
 </footer>
- 
+
 <script>
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
