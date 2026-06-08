@@ -156,6 +156,9 @@ function dateForDow(dow, weekOffset) {
  
     renderMembershipBanner(currentProfile);
  
+    // Request push permission on load (not just after booking)
+    requestPushPermission();
+ 
     // Load classes & bookings
     const [{ data: classes }, { data: bookings }] = await Promise.all([
       db.from('classes').select('*').eq('active', true).order('day_of_week').order('start_time'),
@@ -377,19 +380,27 @@ function dateForDow(dow, weekOffset) {
   async function subscribeToPush() {
     try {
       const reg = await navigator.serviceWorker.ready;
+ 
+      // Unsubscribe from any existing subscription to get a fresh one
       const existing = await reg.pushManager.getSubscription();
-      if (existing) return; // already subscribed
+      if (existing) await existing.unsubscribe();
  
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
       });
  
-      await fetch('/.netlify/functions/save-subscription', {
+      const res = await fetch('/.netlify/functions/save_subscription', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ subscription: sub, user_id: currentProfile.id })
+        body:    JSON.stringify({ subscription: sub.toJSON(), user_id: currentProfile.id })
       });
+ 
+      if (res.ok) {
+        console.log('Push subscription saved successfully');
+      } else {
+        console.warn('Failed to save push subscription:', await res.text());
+      }
     } catch (err) {
       console.warn('Push subscription failed:', err);
     }
