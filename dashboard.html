@@ -777,7 +777,7 @@ function dateForDow(dow, weekOffset) {
 
     } catch (err) {
       console.error('loadStrength error:', err);
-      el.innerHTML = '<div class="empty-state"><div class="emoji">⚠️</div><p>Couldn't load strength data. Please try again.</p><button class="btn btn-outline mt-16" onclick="loadStrength()">Retry</button></div>';
+      el.innerHTML = '<div class="empty-state"><div class="emoji">⚠️</div><p>Could not load strength data. Please try again.</p><button class="btn btn-outline mt-16" onclick="loadStrength()">Retry</button></div>';
     }
   }
 
