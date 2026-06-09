@@ -413,7 +413,7 @@ function dateForDow(dow, weekOffset) {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
       });
 
-      const res = await fetch('/.netlify/functions/save_subscription', {
+      const res = await fetch('/.netlify/functions/save-subscription', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ subscription: sub.toJSON(), user_id: currentProfile.id })
