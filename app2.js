@@ -150,7 +150,7 @@ function renderNav(profile, session) {
     mobileMenu.style.display = 'none';
     mobileMenu.innerHTML = `
       <a href="index.html">Home</a>
-      <a href="dashboard.html">My Classes</a>
+      <a href="dashboard.html">Dashboard</a>
       ${profile?.role === 'admin' ? '<a href="admin.html">Admin</a>' : ''}
       <button onclick="logout()">Log out</button>`;
     document.body.appendChild(mobileMenu);
