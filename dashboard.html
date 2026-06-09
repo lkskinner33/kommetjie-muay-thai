@@ -542,10 +542,13 @@ function dateForDow(dow, weekOffset) {
     const el = document.getElementById('attendance-content');
     el.innerHTML = '<div class="loading-screen" style="min-height:200px"><div class="spinner"></div></div>';
 
+    const today = new Date().toISOString().split('T')[0];
+
     const { data } = await db.from('bookings')
       .select('*, classes(name, start_time, end_time)')
       .eq('user_id', currentProfile.id)
       .eq('status', 'confirmed')
+      .lte('class_date', today)
       .order('class_date', { ascending: false });
 
     const count = document.getElementById('attendance-count');
