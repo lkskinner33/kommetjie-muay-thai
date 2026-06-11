@@ -80,9 +80,10 @@
     .lift-form         { display:grid; gap:14px; margin-top:20px; }
     .lift-form input   { width:100%; }
     .lift-stat__delta  { font-size:.7rem; margin-top:4px; }
-    .lift-delta-pos    { color:var(--lime); }
-    .lift-delta-neg    { color:var(--red,#e53935); }
+    .lift-delta-pos    { color:#00c853; font-weight:700; }
+    .lift-delta-neg    { color:#ff1744; font-weight:700; }
     .lift-delta-nil    { color:var(--mid); }
+    .lift-delta-date   { color:var(--mid); font-weight:400; margin-left:3px; }
     .lift-bar-detail   { display:grid; gap:3px; margin-bottom:4px; }
     .lift-bar-delta    { padding-left:100px; font-size:.7rem; }
   </style>
@@ -724,7 +725,7 @@ function dateForDow(dow, weekOffset) {
         if (!delta || delta.diff === 0) return '<span class="lift-delta-nil">— no change</span>';
         const sign = delta.diff > 0 ? '▲ +' : '▼ ';
         const cls  = delta.diff > 0 ? 'lift-delta-pos' : 'lift-delta-neg';
-        return `<span class="${cls}">${sign}${Math.abs(delta.diff)} kg · ${delta.date}</span>`;
+        return `<span class="${cls}">${sign}${Math.abs(delta.diff)} kg</span><span class="lift-delta-date">· ${delta.date}</span>`;
       }
 
       let html = `
