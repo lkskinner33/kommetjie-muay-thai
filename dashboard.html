@@ -701,7 +701,6 @@ function dateForDow(dow, weekOffset) {
       const myDl    = myLift?.deadlift    || 0;
       const mySq    = myLift?.squat       || 0;
       const myBp    = myLift?.bench_press || 0;
-      const myTotal = myDl + mySq + myBp;
 
       // Build history map: { user_id: { deadlift: [...], squat: [...], bench_press: [...] } }
       const histMap = {};
@@ -728,33 +727,7 @@ function dateForDow(dow, weekOffset) {
         return `<span class="${cls}">${sign}${Math.abs(delta.diff)} kg · ${delta.date}</span>`;
       }
 
-      const myDlDelta = getDelta(currentProfile.id, 'deadlift');
-      const mySqDelta = getDelta(currentProfile.id, 'squat');
-      const myBpDelta = getDelta(currentProfile.id, 'bench_press');
-
       let html = `
-        <div class="lift-grid">
-          <div class="lift-stat">
-            <div class="lift-stat__label">My total</div>
-            <div><span class="lift-stat__val">${myTotal}</span><span class="lift-stat__unit">kg</span></div>
-          </div>
-          <div class="lift-stat">
-            <div class="lift-stat__label">Deadlift</div>
-            <div><span class="lift-stat__val">${myDl}</span><span class="lift-stat__unit">kg</span></div>
-            <div class="lift-stat__delta">${deltaHtml(myDlDelta)}</div>
-          </div>
-          <div class="lift-stat">
-            <div class="lift-stat__label">Squat</div>
-            <div><span class="lift-stat__val">${mySq}</span><span class="lift-stat__unit">kg</span></div>
-            <div class="lift-stat__delta">${deltaHtml(mySqDelta)}</div>
-          </div>
-          <div class="lift-stat">
-            <div class="lift-stat__label">Bench press</div>
-            <div><span class="lift-stat__val">${myBp}</span><span class="lift-stat__unit">kg</span></div>
-            <div class="lift-stat__delta">${deltaHtml(myBpDelta)}</div>
-          </div>
-        </div>
-
         <div class="flex-between mb-16">
           <span class="week-label-section">Members</span>
           <button class="btn btn-primary btn-sm" onclick="toggleStrengthEdit()">
