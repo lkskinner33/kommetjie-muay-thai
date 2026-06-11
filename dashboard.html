@@ -79,6 +79,12 @@
     .lift-bar__val     { color:var(--text); text-align:right; font-weight:600; }
     .lift-form         { display:grid; gap:14px; margin-top:20px; }
     .lift-form input   { width:100%; }
+    .lift-stat__delta  { font-size:.7rem; margin-top:4px; }
+    .lift-delta-pos    { color:var(--lime); }
+    .lift-delta-neg    { color:var(--red,#e53935); }
+    .lift-delta-nil    { color:var(--mid); }
+    .lift-bar-detail   { display:grid; gap:3px; margin-bottom:4px; }
+    .lift-bar-delta    { padding-left:100px; font-size:.7rem; }
   </style>
 </head>
 <body>
@@ -672,43 +678,85 @@ function dateForDow(dow, weekOffset) {
 
   // ── Strength Tracker ─────────────────────────────────────
 
-  let strengthEditing = false;
-
   async function loadStrength() {
     const el = document.getElementById('strength-content');
     el.innerHTML = '<div class="loading-screen" style="min-height:200px"><div class="spinner"></div></div>';
 
     try {
-      // Load all members' lifts joined with their profile names
-      const { data: lifts, error } = await db
-        .from('strength_lifts')
-        .select('*, profiles(full_name)')
-        .order('updated_at', { ascending: false });
+      const [
+        { data: lifts,   error: e1 },
+        { data: history, error: e2 }
+      ] = await Promise.all([
+        db.from('strength_lifts')
+          .select('*, profiles(full_name)')
+          .order('updated_at', { ascending: false }),
+        db.from('strength_history')
+          .select('*')
+          .order('recorded_at', { ascending: true })
+      ]);
 
-      if (error) throw error;
+      if (e1) throw e1;
 
-      // My lift record
-      const myLift = (lifts || []).find(l => l.user_id === currentProfile.id);
-      const maxTotal = Math.max(...(lifts || []).map(l => (l.deadlift + l.squat + l.bench_press)), 1);
-
-      let html = '';
-
-      // My stats summary
-      const myDl = myLift?.deadlift || 0;
-      const mySq = myLift?.squat    || 0;
-      const myBp = myLift?.bench_press || 0;
+      const myLift  = (lifts || []).find(l => l.user_id === currentProfile.id);
+      const myDl    = myLift?.deadlift    || 0;
+      const mySq    = myLift?.squat       || 0;
+      const myBp    = myLift?.bench_press || 0;
       const myTotal = myDl + mySq + myBp;
 
-      html += `
+      // Build history map: { user_id: { deadlift: [...], squat: [...], bench_press: [...] } }
+      const histMap = {};
+      (history || []).forEach(r => {
+        if (!histMap[r.user_id]) histMap[r.user_id] = { deadlift: [], squat: [], bench_press: [] };
+        if (histMap[r.user_id][r.lift]) histMap[r.user_id][r.lift].push(r);
+      });
+
+      function getDelta(userId, lift) {
+        const entries = (histMap[userId] || {})[lift] || [];
+        if (entries.length < 2) return null;
+        const last = entries[entries.length - 1];
+        const prev = entries[entries.length - 2];
+        return {
+          diff: +(last.weight - prev.weight).toFixed(1),
+          date: new Date(last.recorded_at).toLocaleDateString('en-ZA', { day:'numeric', month:'short' })
+        };
+      }
+
+      function deltaHtml(delta) {
+        if (!delta || delta.diff === 0) return '<span class="lift-delta-nil">— no change</span>';
+        const sign = delta.diff > 0 ? '▲ +' : '▼ ';
+        const cls  = delta.diff > 0 ? 'lift-delta-pos' : 'lift-delta-neg';
+        return `<span class="${cls}">${sign}${Math.abs(delta.diff)} kg · ${delta.date}</span>`;
+      }
+
+      const myDlDelta = getDelta(currentProfile.id, 'deadlift');
+      const mySqDelta = getDelta(currentProfile.id, 'squat');
+      const myBpDelta = getDelta(currentProfile.id, 'bench_press');
+
+      let html = `
         <div class="lift-grid">
-          <div class="lift-stat"><div class="lift-stat__label">My total</div><div><span class="lift-stat__val">${myTotal}</span><span class="lift-stat__unit">kg</span></div></div>
-          <div class="lift-stat"><div class="lift-stat__label">Deadlift</div><div><span class="lift-stat__val">${myDl}</span><span class="lift-stat__unit">kg</span></div></div>
-          <div class="lift-stat"><div class="lift-stat__label">Squat</div><div><span class="lift-stat__val">${mySq}</span><span class="lift-stat__unit">kg</span></div></div>
-          <div class="lift-stat"><div class="lift-stat__label">Bench press</div><div><span class="lift-stat__val">${myBp}</span><span class="lift-stat__unit">kg</span></div></div>
+          <div class="lift-stat">
+            <div class="lift-stat__label">My total</div>
+            <div><span class="lift-stat__val">${myTotal}</span><span class="lift-stat__unit">kg</span></div>
+          </div>
+          <div class="lift-stat">
+            <div class="lift-stat__label">Deadlift</div>
+            <div><span class="lift-stat__val">${myDl}</span><span class="lift-stat__unit">kg</span></div>
+            <div class="lift-stat__delta">${deltaHtml(myDlDelta)}</div>
+          </div>
+          <div class="lift-stat">
+            <div class="lift-stat__label">Squat</div>
+            <div><span class="lift-stat__val">${mySq}</span><span class="lift-stat__unit">kg</span></div>
+            <div class="lift-stat__delta">${deltaHtml(mySqDelta)}</div>
+          </div>
+          <div class="lift-stat">
+            <div class="lift-stat__label">Bench press</div>
+            <div><span class="lift-stat__val">${myBp}</span><span class="lift-stat__unit">kg</span></div>
+            <div class="lift-stat__delta">${deltaHtml(myBpDelta)}</div>
+          </div>
         </div>
 
         <div class="flex-between mb-16">
-          <h3>Gym Totals</h3>
+          <span class="week-label-section">Members</span>
           <button class="btn btn-primary btn-sm" onclick="toggleStrengthEdit()">
             ${myLift ? 'Update my lifts' : '+ Add my lifts'}
           </button>
@@ -736,41 +784,71 @@ function dateForDow(dow, weekOffset) {
           </div>
         </div>`;
 
-      // All members' lift cards
-      if (!lifts || lifts.length === 0) {
+      // Members sorted alphabetically by first name
+      const maxTotal = Math.max(...(lifts || []).map(l => (l.deadlift||0) + (l.squat||0) + (l.bench_press||0)), 1);
+      const sorted   = [...(lifts || [])].sort((a, b) => {
+        const na = (a.profiles?.full_name || '').toLowerCase();
+        const nb = (b.profiles?.full_name || '').toLowerCase();
+        return na.localeCompare(nb);
+      });
+
+      if (!sorted.length) {
         html += '<div class="empty-state"><div class="emoji">🏋️</div><p>No lifts recorded yet. Be the first!</p></div>';
       } else {
-        lifts.forEach(l => {
-          const name   = l.profiles?.full_name || 'Member';
+        sorted.forEach(l => {
+          const name     = l.profiles?.full_name || 'Member';
           const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-          const dl     = l.deadlift    || 0;
-          const sq     = l.squat       || 0;
-          const bp     = l.bench_press || 0;
-          const total  = dl + sq + bp;
-          const isMe   = l.user_id === currentProfile.id;
+          const first    = name.split(' ')[0];
+          const dl       = l.deadlift    || 0;
+          const sq       = l.squat       || 0;
+          const bp       = l.bench_press || 0;
+          const total    = dl + sq + bp;
+          const isMe     = l.user_id === currentProfile.id;
+          const updDate  = l.updated_at
+            ? new Date(l.updated_at).toLocaleDateString('en-ZA', { day:'numeric', month:'short', year:'numeric' })
+            : '';
+
+          const dlDelta = getDelta(l.user_id, 'deadlift');
+          const sqDelta = getDelta(l.user_id, 'squat');
+          const bpDelta = getDelta(l.user_id, 'bench_press');
 
           html += `
-            <div class="lift-card${isMe ? ' card--lime' : ''}">
-              <div class="lift-card__header">
+            <div class="lift-card${isMe ? ' card--lime' : ''}" style="margin-bottom:6px;cursor:pointer" onclick="toggleLiftCard('${l.user_id}')">
+              <div class="lift-card__header" style="margin-bottom:0">
                 <div class="lift-card__avatar">${initials}</div>
-                <div class="lift-card__name">${name.split(' ')[0]}${isMe ? ' (you)' : ''}</div>
+                <div style="flex:1">
+                  <div class="lift-card__name">${first}${isMe ? ' (you)' : ''}</div>
+                  ${updDate ? `<div style="font-size:.68rem;color:var(--mid);margin-top:1px">Updated ${updDate}</div>` : ''}
+                </div>
                 <div class="lift-card__total">${total} kg</div>
+                <div id="chev-${l.user_id}" style="font-size:.7rem;color:var(--mid);margin-left:8px">▼</div>
               </div>
-              <div class="lift-card__bars">
-                <div class="lift-bar">
-                  <div class="lift-bar__label">Deadlift</div>
-                  <div class="lift-bar__track"><div class="lift-bar__fill" style="width:${Math.round(dl/maxTotal*100)}%"></div></div>
-                  <div class="lift-bar__val">${dl} kg</div>
-                </div>
-                <div class="lift-bar">
-                  <div class="lift-bar__label">Squat</div>
-                  <div class="lift-bar__track"><div class="lift-bar__fill" style="width:${Math.round(sq/maxTotal*100)}%"></div></div>
-                  <div class="lift-bar__val">${sq} kg</div>
-                </div>
-                <div class="lift-bar">
-                  <div class="lift-bar__label">Bench press</div>
-                  <div class="lift-bar__track"><div class="lift-bar__fill" style="width:${Math.round(bp/maxTotal*100)}%"></div></div>
-                  <div class="lift-bar__val">${bp} kg</div>
+              <div id="lift-detail-${l.user_id}" style="display:none;margin-top:14px">
+                <div class="lift-card__bars">
+                  <div class="lift-bar-detail">
+                    <div class="lift-bar">
+                      <div class="lift-bar__label">Deadlift</div>
+                      <div class="lift-bar__track"><div class="lift-bar__fill" style="width:${Math.round(dl/maxTotal*100)}%"></div></div>
+                      <div class="lift-bar__val">${dl} kg</div>
+                    </div>
+                    <div class="lift-bar-delta">${deltaHtml(dlDelta)}</div>
+                  </div>
+                  <div class="lift-bar-detail">
+                    <div class="lift-bar">
+                      <div class="lift-bar__label">Squat</div>
+                      <div class="lift-bar__track"><div class="lift-bar__fill" style="width:${Math.round(sq/maxTotal*100)}%"></div></div>
+                      <div class="lift-bar__val">${sq} kg</div>
+                    </div>
+                    <div class="lift-bar-delta">${deltaHtml(sqDelta)}</div>
+                  </div>
+                  <div class="lift-bar-detail">
+                    <div class="lift-bar">
+                      <div class="lift-bar__label">Bench press</div>
+                      <div class="lift-bar__track"><div class="lift-bar__fill" style="width:${Math.round(bp/maxTotal*100)}%"></div></div>
+                      <div class="lift-bar__val">${bp} kg</div>
+                    </div>
+                    <div class="lift-bar-delta">${deltaHtml(bpDelta)}</div>
+                  </div>
                 </div>
               </div>
             </div>`;
@@ -785,27 +863,44 @@ function dateForDow(dow, weekOffset) {
     }
   }
 
+  function toggleLiftCard(userId) {
+    const detail = document.getElementById('lift-detail-' + userId);
+    const chev   = document.getElementById('chev-' + userId);
+    if (!detail) return;
+    const open = detail.style.display === 'none';
+    detail.style.display = open ? 'block' : 'none';
+    if (chev) chev.textContent = open ? '▲' : '▼';
+  }
+
   function toggleStrengthEdit() {
     const form = document.getElementById('strength-edit-form');
     if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
   }
 
   async function saveLifts() {
-    const dl = parseFloat(document.getElementById('lift-dl').value) || 0;
-    const sq = parseFloat(document.getElementById('lift-sq').value) || 0;
-    const bp = parseFloat(document.getElementById('lift-bp').value) || 0;
+    const dl  = parseFloat(document.getElementById('lift-dl').value) || 0;
+    const sq  = parseFloat(document.getElementById('lift-sq').value) || 0;
+    const bp  = parseFloat(document.getElementById('lift-bp').value) || 0;
+    const now = new Date().toISOString();
 
-    const { error } = await db.from('strength_lifts').upsert({
+    const { error: upsertErr } = await db.from('strength_lifts').upsert({
       user_id:     currentProfile.id,
       deadlift:    dl,
       squat:       sq,
       bench_press: bp,
-      updated_at:  new Date().toISOString()
+      updated_at:  now
     }, { onConflict: 'user_id' });
 
-    if (error) {
-      showToast('Failed to save. Please try again.', 'error');
-      return;
+    if (upsertErr) { showToast('Failed to save. Please try again.', 'error'); return; }
+
+    const histRows = [];
+    if (dl) histRows.push({ user_id: currentProfile.id, lift: 'deadlift',    weight: dl, recorded_at: now });
+    if (sq) histRows.push({ user_id: currentProfile.id, lift: 'squat',       weight: sq, recorded_at: now });
+    if (bp) histRows.push({ user_id: currentProfile.id, lift: 'bench_press', weight: bp, recorded_at: now });
+
+    if (histRows.length) {
+      const { error: histErr } = await db.from('strength_history').insert(histRows);
+      if (histErr) console.warn('History insert failed:', histErr);
     }
 
     showToast('Lifts saved!', 'success');
