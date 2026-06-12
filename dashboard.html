@@ -438,15 +438,18 @@ function dateForDow(dow, weekOffset) {
     try {
       const reg = await navigator.serviceWorker.ready;
 
-      // Unsubscribe from any existing subscription to get a fresh one
-      const existing = await reg.pushManager.getSubscription();
-      if (existing) await existing.unsubscribe();
+      // Reuse existing subscription if one already exists — don't recreate
+      let sub = await reg.pushManager.getSubscription();
 
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-      });
+      if (!sub) {
+        // No existing subscription — create one
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+      }
 
+      // Always upsert so the record stays current for this user+endpoint
       const res = await fetch('/.netlify/functions/save-subscription', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
