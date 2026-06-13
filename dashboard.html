@@ -438,18 +438,29 @@ function dateForDow(dow, weekOffset) {
     try {
       const reg = await navigator.serviceWorker.ready;
 
-      // Reuse existing subscription if one already exists — don't recreate
+      // Get the current browser subscription
       let sub = await reg.pushManager.getSubscription();
 
-      if (!sub) {
-        // No existing subscription — create one
+      // Check what endpoint is currently saved in the DB for this user
+      const { data: dbSubs } = await db
+        .from('push_subscriptions')
+        .select('endpoint')
+        .eq('user_id', currentProfile.id)
+        .limit(1);
+      const savedEndpoint = dbSubs?.[0]?.endpoint;
+
+      // Force a fresh subscription if:
+      // - No browser subscription exists, or
+      // - Browser endpoint doesn't match what's saved (stale DB record)
+      if (!sub || (savedEndpoint && sub.endpoint !== savedEndpoint)) {
+        if (sub) await sub.unsubscribe();
         sub = await reg.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
         });
       }
 
-      // Always upsert so the record stays current for this user+endpoint
+      // Save/update the subscription in the DB
       const res = await fetch('/.netlify/functions/save-subscription', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
