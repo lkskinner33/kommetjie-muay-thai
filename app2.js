@@ -188,6 +188,9 @@ document.addEventListener('click', function(e) {
 // ── PWA Install Prompt ────────────────────────────────────
 
 (function () {
+  // Defensive: clear any stray backdrop left over from a previous broken state
+  document.getElementById('pwa-backdrop')?.remove();
+
   // Don't show if already running as installed PWA
   if (window.matchMedia('(display-mode: standalone)').matches ||
       window.navigator.standalone === true) return;
@@ -213,9 +216,14 @@ document.addEventListener('click', function(e) {
     setTimeout(showSheet, 2500);
   });
 
+  let sheetOpen = false;
+
   function buildSheet() {
-    // Remove any existing sheet
+    // Never stack a second sheet/backdrop on top of one that's already showing
+    if (sheetOpen) return;
+    // Remove any stray leftover sheet just in case one didn't clean up properly
     document.getElementById('pwa-backdrop')?.remove();
+    sheetOpen = true;
 
     const backdrop = document.createElement('div');
     backdrop.id = 'pwa-backdrop';
@@ -288,6 +296,7 @@ document.addEventListener('click', function(e) {
       backdrop.classList.remove('show');
       setTimeout(() => backdrop.remove(), 350);
     }
+    sheetOpen = false;
     localStorage.setItem('kmt-pwa-dismissed', Date.now().toString());
   }
 
