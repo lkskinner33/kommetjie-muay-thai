@@ -524,7 +524,6 @@ function dateForDow(dow, weekOffset) {
     const handler = PaystackPop.setup({
       key:       PAYSTACK_PUBLIC_KEY,
       email:     currentProfile.email,
-      amount:    MONTHLY_PRICE * 100,
       currency:  'ZAR',
       plan:      PAYSTACK_PLAN_CODE,
       metadata:  { payment_type: 'monthly', user_id: currentProfile.id },
